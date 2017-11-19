@@ -8,7 +8,7 @@
 
 #include "user.h"
 
-#define LOGIN_FAIL "451"
+#define LOGIN_FAIL "430"
 #define LOGIN_SUCCESS "230"
 
 #define CMD_ARG_1_LEN 30

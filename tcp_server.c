@@ -61,7 +61,7 @@ int no_user = 0;
 int no_session = 0;
 
 int main(int argc, char *argv[])
-{
+{	
 	int port = 0;
 	pid_t pid;
 	int listen_sock, conn_sock; /* file descriptors */
@@ -123,6 +123,8 @@ int main(int argc, char *argv[])
 				printf("%s:\n", "Child created for dealing with client requests");
 
 				close(listen_sock); /* child closes listening socket */
+
+				send(conn_sock, "220 USER <username>|<password> to login or SIGN <username>|<password> to sign up", strlen("220 USER <username>|<password> to login or SIGN <username>|<password> to sign up") + 1, 0);
 
 				while (1)
 				{
