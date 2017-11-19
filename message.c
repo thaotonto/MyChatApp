@@ -1,20 +1,21 @@
-#include "user.h"
+#include "message.h"
 #include "constant.h"
 
 /**
- * [create_new_user description]
  * @return
- * 0: create success
- * 1: connect db fail
- * 2: wrong query's params
+ * 0: success
+ * 1: connection fail
+ * 2: wrong agrument
  */
-int create_new_user(char *name, char *pass) {
+int store_message   (int s_id, int r_id, char* content,
+                                int timestamp, int state) {
 
     MYSQL *conn = mysql_init(NULL);
     char query[1000];
 
-    sprintf(query, "INSERT INTO users (name, password) VALUES ('%s', '%s')",
-                                                    name, pass);
+    sprintf(query,
+        "INSERT INTO messages (send_id, receive_id, content, time, state) VALUES (%d, %d, '%s', %d, %d)",
+                            s_id, r_id, content, timestamp, state);
 
     if (conn == NULL) {
        return 1;
@@ -34,65 +35,76 @@ int create_new_user(char *name, char *pass) {
     return 0;
 }
 
-/**
- * @return
- * 0: ok to login
- * 1: connection fail
- * 2: login fail
- */
-
-int check_user(char *name, char *pass) {
-
+message_array get_history(int id_1, int id_2) {
     MYSQL *conn = mysql_init(NULL);
+    MYSQL_ROW row;
+    MYSQL_FIELD *field;
     MYSQL_RES *result;
+    message_array arr;
+    Message messages[1000];
     char query[1000];
-
+    int i, count = 0;
     sprintf(query,
-        "Select * FROM users WHERE name = '%s' AND password = '%s'", name,
-                                                                        pass);
+        "SELECT * FROM chat.messages WHERE (send_id = %d AND receive_id = %d)  OR (send_id = %d AND receive_id = %d)",
+        id_1, id_2, id_2, id_1);
+    arr.count = 0;
+    arr.state = 0;
 
     if (conn == NULL) {
-       return 1;
+        arr.state = 1;
+        return arr;
     }
 
     if (mysql_real_connect(conn, host, db_user, password, db_name,
                                         port, unix_socket, flag) == NULL) {
         mysql_close(conn);
-        return 1;
+        arr.state = 1;
+        return arr;
     }
 
     if (mysql_query(conn, query)) {
         mysql_close(conn);
-        return 1;
+        arr.state = 1;
+        return arr;
     }
 
     result = mysql_store_result(conn);
 
     if(result == NULL) {
         mysql_close(conn);
-        return 2;
+        arr.state = 2;
+        return arr;
     }
 
-    if(mysql_num_rows(result) == 0){
-        return 2;
+    arr.count = mysql_num_rows(result);
+
+    while ((row = mysql_fetch_row(result))) {
+        messages[count].s_id = atoi(row[0]);
+        messages[count].r_id = atoi(row[1]);
+        strcpy(messages[count].content, row[2]);
+        messages[count].timestamp = atoi(row[3]);
+        messages[count].state = atoi(row[4]);
+        count++;
     }
+
+    memcpy(&arr.messages, &messages, arr.count*sizeof(Message));
 
     mysql_free_result(result);
 
     mysql_close(conn);
-    return 0;
+    return arr;
 }
 
-user_array get_users_list() {
+message_array get_offline_messages() {
     MYSQL *conn = mysql_init(NULL);
     MYSQL_ROW row;
     MYSQL_FIELD *field;
     MYSQL_RES *result;
-    user_array arr;
-    User users[1000];
+    message_array arr;
+    Message messages[1000];
     char query[1000];
     int i, count = 0;
-    sprintf(query, "Select * FROM users");
+    sprintf(query, "Select * FROM messages WHERE state = 0");
     arr.count = 0;
     arr.state = 0;
 
@@ -125,14 +137,15 @@ user_array get_users_list() {
     arr.count = mysql_num_rows(result);
 
     while ((row = mysql_fetch_row(result))) {
-        users[count].id = atoi(row[0]);
-        strcpy(users[count].name, row[1]);
-        strcpy(users[count].password, row[2]);
-        users[count].state = atoi(row[3]);
+        messages[count].s_id = atoi(row[0]);
+        messages[count].r_id = atoi(row[1]);
+        strcpy(messages[count].content, row[2]);
+        messages[count].timestamp = atoi(row[3]);
+        messages[count].state = atoi(row[4]);
         count++;
     }
 
-    memcpy(&arr.users, &users, arr.count*sizeof(User));
+    memcpy(&arr.messages, &messages, arr.count*sizeof(Message));
 
     mysql_free_result(result);
 
@@ -140,48 +153,28 @@ user_array get_users_list() {
     return arr;
 }
 
-User *get_user_by_id( int id ){
+
+int change_message_state(int s_id, int r_id, int timestamp) {
     MYSQL *conn = mysql_init(NULL);
-    MYSQL_ROW row;
-    MYSQL_FIELD *field;
-    MYSQL_RES *result;
-    User *r;
-    r = (User*)malloc(sizeof(User));
     char query[1000];
-    int i;
-    sprintf(query, "Select * FROM users WHERE id = %d", id);
+
+    sprintf(query,
+        "UPDATE messages SET state = 1 WHERE send_id = %d AND receive_id = %d AND timestamp = %d", s_id, r_id, timestamp);
 
     if (conn == NULL) {
-       return NULL;
+       return 1;
     }
 
     if (mysql_real_connect(conn, host, db_user, password, db_name,
                                         port, unix_socket, flag) == NULL) {
         mysql_close(conn);
-        return NULL;
+        return 1;
     }
 
-    if (mysql_query(conn, query)) {
+    if (mysql_query(conn,query)) {
         mysql_close(conn);
-        return NULL;
+        return 2;
     }
 
-    result = mysql_store_result(conn);
-
-    if(result == NULL) {
-        mysql_close(conn);
-        return NULL;
-    }
-
-    while ((row = mysql_fetch_row(result))) {
-        r->id = atoi(row[0]);
-        strcpy(r->name, row[1]);
-        strcpy(r->password, row[2]);
-        r->state = atoi(row[3]);
-    }
-
-    mysql_free_result(result);
-
-    mysql_close(conn);
-    return r;
+    return 0;
 }

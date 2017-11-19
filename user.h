@@ -1,38 +1,37 @@
-
-
 #ifndef USER_H
 #define USER_H
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
+#include <my_global.h>
+#include <mysql.h>
 
-#define MAX_NO_USER 100
-#define USER_ID_LEN 30
-#define PASS_LEN 30
-
-enum UserStatus { 
-    BLOCKED,
-    ACTIVE
-};
-
-typedef struct User_ {
-    char id[USER_ID_LEN + 1];
-    char pass[PASS_LEN + 1];
-    enum UserStatus status;
+typedef struct
+{
+    int id;
+    char name[30];
+    char password[30];
+    int state;
 } User;
 
-User user[MAX_NO_USER];
-extern int no_user;
 
+/**
+ * State of array
+ * 0: normal
+ * 1: can't connect yet
+ * 2: no record
+ */
+typedef struct
+{
+    int state;
+    int count;
+    User users[100];
+} user_array;
 
+User *get_user_by_id(int id);
+int create_new_user(char *name, char *password);
+int check_user(char *name, char *password);
+user_array get_users_list();
 
-User *findByUserId (char *id);
-int indexOfUser (char *id);
-void writeUser (char *file_name);
-void readUser (char *file_name);
-_Bool isFullNoUser ();
-FILE *openFile (char *file_name, char *mode);
 
 #endif

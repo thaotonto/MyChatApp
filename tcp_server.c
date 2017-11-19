@@ -12,10 +12,9 @@
 #include <setjmp.h>   /*****  For sigsetjmp and siglongjmp.  *****/
 
 #include "user.h"
-#include "session.h"
-#include "app.h"
+#include "controller.h"
 
-#define USER_FILE "account.txt"
+// #define USER_FILE "account.txt"
 #define BACKLOG 100 /* Number of allowed connections */
 #define BUFF_SIZE 2048
 #define DEFAULT_PORT 3000
@@ -31,7 +30,7 @@ void validArguments(int argc, char *argv[], int *port)
 		{
 			if (!isdigit(port_str[i]))
 			{
-				printf("Port is invalid, using default port 5000\n");
+				printf("Port is invalid, using default port 3000\n");
 				*port = DEFAULT_PORT;
 				return;
 			}
@@ -63,13 +62,7 @@ int no_session = 0;
 
 int main(int argc, char *argv[])
 {
-	// Read list-user from file
-	readUser(USER_FILE);
-
 	int port = 0;
-	// checking arguments
-	validArguments(argc, argv, &port);
-
 	pid_t pid;
 	int listen_sock, conn_sock; /* file descriptors */
 	char recv_data[BUFF_SIZE];
@@ -77,6 +70,8 @@ int main(int argc, char *argv[])
 	struct sockaddr_in server;  /* server's address information */
 	struct sockaddr_in *client; /* client's address information */
 	int sin_size;
+
+	validArguments(argc, argv, &port);
 
 	// Create a socket
 	if ((listen_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -129,14 +124,6 @@ int main(int argc, char *argv[])
 
 				close(listen_sock); /* child closes listening socket */
 
-				// Add session
-				if (newSession(client) == FN_ERROR)
-				{
-					printf("Error: Number of sessions is maximum!");
-					continue;
-				}
-
-				//start conversation
 				while (1)
 				{
 					//receives message from client
@@ -152,7 +139,7 @@ int main(int argc, char *argv[])
 						printf("\nReceive: |%s|\n", recv_data);
 
 						Output *op = processCmd(client, recv_data);
-						bytes_output = op2str(op, output, BUFF_SIZE);
+						bytes_output = output_message(op, output);
 					}
 
 					//echo to client
@@ -164,10 +151,10 @@ int main(int argc, char *argv[])
 					}
 				} //end conversation
 				  // Remove from session
-				removeSession(client);
+				// removeSession(client);
 
 				// Write list-user to file
-				writeUser(USER_FILE);
+				// writeUser(USER_FILE);
 				close(conn_sock); /* done with this client */
 
 				exit(0); /* child terminates */
