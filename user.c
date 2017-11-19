@@ -193,11 +193,15 @@ User *get_user_by_id( int id ){
  * 1: connection fail
  * 2: wrong agrument
  */
-int change_user_state(char *name){
+int change_user_state(char *name, int cur_state){
     MYSQL *conn = mysql_init(NULL);
     char query[1000];
+    if(cur_state == 0){
+        sprintf(query, "UPDATE users SET state = 1 WHERE name = '%s'", name);
+    } else if(cur_state == 1 ){
+        sprintf(query, "UPDATE users SET state = 0 WHERE name = '%s'", name);
+    }
 
-    sprintf(query, "UPDATE users SET state = 1 WHERE name = '%s'", name);
 
     if (conn == NULL) {
        return 1;
