@@ -32,7 +32,7 @@ User *get_user_by_id(int id);
 int create_new_user(char *name, char *password);
 int check_user(char *name, char *password);
 user_array get_users_list();
-int change_user_state(char *name);
+int change_user_state(char *name, int cur_state);
 
 
 #endif

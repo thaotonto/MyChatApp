@@ -10,7 +10,7 @@
 #include <signal.h>
 #include <unistd.h>
 
-#define BUFF_SIZE 2048
+#define BUFF_SIZE 2098
 
 #define PASS_LEN 30         // do dai lon nhat cua password
 #define CODE_LEN 4          // do dai lon nhat cua ma lenh

@@ -1,4 +1,6 @@
 #include "controller.h"
+#include <stdlib.h>
+#include <string.h>
 /**
  * [op2str  description]
  * @param  op       [description]
@@ -7,7 +9,7 @@
  * @return          [string length of the command]
  */
 int output_message (Output *op, char *str) {
-    bzero(str, 2048);
+    bzero(str, 2098);
 
     if (op == NULL) {
         strcpy(str, "Error: Command not found!");
@@ -16,7 +18,6 @@ int output_message (Output *op, char *str) {
         strcat(str, "|");
         strcat(str, op->out1);
         if(strlen(op->out2) > 0){
-            strcat(str, "");
             strcat(str, op->out2);
         }
         free(op);
@@ -47,13 +48,25 @@ Output *processCmd (struct sockaddr_in *cliaddr, char *command_str) {
 
 
 Output *processUSER (struct sockaddr_in *cliaddr, char *name, char *pass) {
+    user_array arr;
+    int i;
+    char buffer[2];
     Output *op = (Output *) malloc(sizeof(Output));
     if(check_user(name, pass) == 0){
+        change_user_state(name, 0);
         strcpy(op->code, LOGIN_SUCCESS);
         strcpy(op->out1, "Wellcome ");
         strcat(op->out1, name);
-         //TODO: change status user
-        change_user_state(name);
+        arr = get_users_list();
+        if (arr.state == 0) {
+            for (i = 0; i <  arr.count; i++) {
+                strcat(op->out2, "|");
+                strcat(op->out2, arr.users[i].name);
+                strcat(op->out2, " ");
+                sprintf(buffer,"%d",arr.users[i].state);
+                strcat(op->out2, buffer);
+            }
+        }
     } else{
         strcpy(op->code, LOGIN_FAIL);
         strcpy(op->out1, "Invalid username or password");
@@ -62,13 +75,25 @@ Output *processUSER (struct sockaddr_in *cliaddr, char *name, char *pass) {
 }
 
 Output *processSIGN (struct sockaddr_in *cliaddr, char *name, char *pass) {
+    user_array arr;
+    int i;
+    char buffer[2]; 
     Output *op = (Output *) malloc(sizeof(Output));
     if(create_new_user(name, pass) == 0){
+        change_user_state(name, 0);
         strcpy(op->code, LOGIN_SUCCESS);
         strcpy(op->out1, "Sign up success and login as ");
         strcat(op->out1, name);
-        //TODO: change status user
-        change_user_state(name);
+        arr = get_users_list();
+        if (arr.state == 0) {
+            for (i = 0; i <  arr.count; i++) {
+                strcat(op->out2, "|");
+                strcat(op->out2, arr.users[i].name);
+                strcat(op->out2, " ");
+                sprintf(buffer,"%d",arr.users[i].state);
+                strcat(op->out2, buffer);
+            }
+        }
     } else{
         strcpy(op->code, SIGNUP_FAIL);
         strcpy(op->out1, "Requested action aborted");

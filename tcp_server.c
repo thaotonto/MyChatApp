@@ -16,7 +16,7 @@
 
 // #define USER_FILE "account.txt"
 #define BACKLOG 100 /* Number of allowed connections */
-#define BUFF_SIZE 2048
+#define BUFF_SIZE 2098
 #define DEFAULT_PORT 3000
 
 void validArguments(int argc, char *argv[], int *port)
@@ -141,6 +141,7 @@ int main(int argc, char *argv[])
 						printf("\nReceive: |%s|\n", recv_data);
 
 						Output *op = processCmd(client, recv_data);
+						//TODO : thong bao cho cac user online khac user nay da online
 						bytes_output = output_message(op, output);
 					}
 
@@ -152,11 +153,7 @@ int main(int argc, char *argv[])
 						break;
 					}
 				} //end conversation
-				  // Remove from session
-				// removeSession(client);
-
-				// Write list-user to file
-				// writeUser(USER_FILE);
+				
 				close(conn_sock); /* done with this client */
 
 				exit(0); /* child terminates */
