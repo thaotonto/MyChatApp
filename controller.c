@@ -53,6 +53,7 @@ Output *processUSER (struct sockaddr_in *cliaddr, char *name, char *pass) {
         strcpy(op->out1, "Wellcome ");
         strcat(op->out1, name);
          //TODO: change status user
+        change_user_state(name);
     } else{
         strcpy(op->code, LOGIN_FAIL);
         strcpy(op->out1, "Invalid username or password");
@@ -67,6 +68,7 @@ Output *processSIGN (struct sockaddr_in *cliaddr, char *name, char *pass) {
         strcpy(op->out1, "Sign up success and login as ");
         strcat(op->out1, name);
         //TODO: change status user
+        change_user_state(name);
     } else{
         strcpy(op->code, SIGNUP_FAIL);
         strcpy(op->out1, "Requested action aborted");
@@ -132,7 +134,7 @@ struct Command_ *command (char *input_str) {
     struct Command_ *cmd = (struct Command_ *) malloc (sizeof(struct Command_));
 
     char *rest = input_str;
-    
+
     strcpy(code,strtok_r(rest, "|", &rest));
     if (!strcmp(code, "USER")) {
         cmd->code = USER;
@@ -150,7 +152,7 @@ struct Command_ *command (char *input_str) {
         strcpy(cmd->arg1, argv1);
         strcpy(cmd->arg2, argv2);
         return cmd;
-    } 
+    }
 
     if (!strcmp(code, "QUIT")) {
         cmd->code = QUIT;
@@ -163,5 +165,5 @@ struct Command_ *command (char *input_str) {
     if (!strcmp(code, "SEND")) {
         cmd->code = SEND;
     }
-    
+
 }

@@ -185,3 +185,34 @@ User *get_user_by_id( int id ){
     mysql_close(conn);
     return r;
 }
+
+
+/**
+ * @return
+ * 0: success
+ * 1: connection fail
+ * 2: wrong agrument
+ */
+int change_user_state(char *name){
+    MYSQL *conn = mysql_init(NULL);
+    char query[1000];
+
+    sprintf(query, "UPDATE users SET state = 1 WHERE name = '%s'", name);
+
+    if (conn == NULL) {
+       return 1;
+     }
+
+    if (mysql_real_connect(conn, host, db_user, password, db_name,
+                                        port, unix_socket, flag) == NULL) {
+        mysql_close(conn);
+        return 1;
+    }
+
+    if (mysql_query(conn,query)) {
+        mysql_close(conn);
+        return 2;
+    }
+
+    return 0;
+}
