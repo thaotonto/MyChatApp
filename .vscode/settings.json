@@ -2,6 +2,8 @@
     "files.associations": {
         "app.h": "c",
         "inet.h": "c",
-        "sstream": "c"
+        "sstream": "c",
+        "system_error": "c",
+        "typeinfo": "c"
     }
 }

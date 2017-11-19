@@ -10,6 +10,7 @@
 
 #define LOGIN_FAIL "430"
 #define LOGIN_SUCCESS "230"
+#define SIGNUP_FAIL "451"
 
 #define CMD_ARG_1_LEN 30
 #define CMD_ARG_2_LEN 30
@@ -19,7 +20,11 @@
 #define CODE_LEN 3          // do dai lon nhat cua ma lenh
 
 enum CommandCode {
-    USER
+    USER,
+    SIGN,
+    QUIT,
+    REQU,
+    SEND
 };
 
 struct Command_ {
@@ -38,6 +43,10 @@ typedef struct Output_ {
 int output_message (Output *op, char *str);
 Output *processCmd (struct sockaddr_in *cliaddr, char *command_str);
 Output *processUSER (struct sockaddr_in *cliaddr, char *name, char *pass);
+Output *processSIGN (struct sockaddr_in *cliaddr, char *name, char *pass);
+Output *processREQU (struct sockaddr_in *cliaddr, char *name, char *pass);
+Output *processSEND (struct sockaddr_in *cliaddr, char *name, char *pass);
+Output *processQUIT (struct sockaddr_in *cliaddr, char *name, char *pass);
 struct Command_ *command (char *input_str);
 
 #endif
