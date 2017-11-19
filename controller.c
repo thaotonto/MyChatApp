@@ -24,21 +24,21 @@ int output_message (Output *op, char *str) {
     return (strlen(str) + 1);
 }
 
-Output *processCmd (struct sockaddr_in *cliaddr, char *command_str) {
+Output *processCmd (char *command_str) {
     struct Command_ *cmd = command(command_str);
     if (cmd == NULL) return;
 
     switch (cmd->code) {
     case USER:
-        return processUSER(cliaddr, cmd->arg1, cmd->arg2);
+        return processUSER(cmd->arg1, cmd->arg2);
     case SIGN:
-        return processSIGN(cliaddr, cmd->arg1, cmd->arg2);
+        return processSIGN(cmd->arg1, cmd->arg2);
     case QUIT:
-        return processQUIT(cliaddr, cmd->arg1);
+        return processQUIT(cmd->arg1);
     case REQU:
-        return processREQU(cliaddr, cmd->arg1, cmd->arg2);
+        return processREQU(cmd->arg1, cmd->arg2);
     case SEND:
-        return processSEND(cliaddr, cmd->arg1, cmd->arg2);
+        return processSEND(cmd->arg1, cmd->arg2);
     default:
         return NULL;
     }
@@ -46,7 +46,7 @@ Output *processCmd (struct sockaddr_in *cliaddr, char *command_str) {
 
 
 
-Output *processUSER (struct sockaddr_in *cliaddr, char *name, char *pass) {
+Output *processUSER (char *name, char *pass) {
     user_array arr;
     int i;
     char buffer[2];
@@ -54,8 +54,7 @@ Output *processUSER (struct sockaddr_in *cliaddr, char *name, char *pass) {
     if(check_user(name, pass) == 0){
         change_user_state(name, 0);
         strcpy(op->code, LOGIN_SUCCESS);
-        strcpy(op->out1, "");
-        strcat(op->out1, name);
+        strcpy(op->out1, name);
         arr = get_users_list();
         if (arr.state == 0) {
             for (i = 0; i <  arr.count; i++) {
@@ -73,11 +72,12 @@ Output *processUSER (struct sockaddr_in *cliaddr, char *name, char *pass) {
     } else{
         strcpy(op->code, LOGIN_FAIL);
         strcpy(op->out1, "Invalid username or password");
+        strcpy(op->out2, "");
     }
     return op;
 }
 
-Output *processSIGN (struct sockaddr_in *cliaddr, char *name, char *pass) {
+Output *processSIGN (char *name, char *pass) {
     user_array arr;
     int i;
     char buffer[2]; 
@@ -85,8 +85,7 @@ Output *processSIGN (struct sockaddr_in *cliaddr, char *name, char *pass) {
     if(create_new_user(name, pass) == 0){
         change_user_state(name, 0);
         strcpy(op->code, SIGNUP_SUCCESS);
-        strcpy(op->out1, "");
-        strcat(op->out1, name);
+        strcpy(op->out1, name);
         arr = get_users_list();
         if (arr.state == 0) {
             for (i = 0; i <  arr.count; i++) {
@@ -104,11 +103,12 @@ Output *processSIGN (struct sockaddr_in *cliaddr, char *name, char *pass) {
     } else{
         strcpy(op->code, SIGNUP_FAIL);
         strcpy(op->out1, "Requested action aborted");
+        strcpy(op->out2, "");
     }
     return op;
 }
 
-Output *processREQU (struct sockaddr_in *cliaddr, char *name, char *pass) {
+Output *processREQU (char *name, char *pass) {
     Output *op = (Output *) malloc(sizeof(Output));
     if(create_new_user(name, pass) == 0){
         strcpy(op->code, LOGIN_SUCCESS);
@@ -118,11 +118,12 @@ Output *processREQU (struct sockaddr_in *cliaddr, char *name, char *pass) {
     } else{
         strcpy(op->code, SIGNUP_FAIL);
         strcpy(op->out1, "Requested action aborted");
+        strcpy(op->out2, "");
     }
     return op;
 }
 
-Output *processSEND (struct sockaddr_in *cliaddr, char *name, char *pass) {
+Output *processSEND (char *name, char *pass) {
     Output *op = (Output *) malloc(sizeof(Output));
     if(create_new_user(name, pass) == 0){
         strcpy(op->code, LOGIN_SUCCESS);
@@ -132,16 +133,17 @@ Output *processSEND (struct sockaddr_in *cliaddr, char *name, char *pass) {
     } else{
         strcpy(op->code, SIGNUP_FAIL);
         strcpy(op->out1, "Requested action aborted");
+        strcpy(op->out2, "");
     }
     return op;
 }
 
-Output *processQUIT (struct sockaddr_in *cliaddr, char *name) {
+Output *processQUIT (char *name) {
     Output *op = (Output *) malloc(sizeof(Output));
     change_user_state(name, 1);
     strcpy(op->code, EXIT);
-    strcpy(op->out1, "");
-    strcat(op->out1, name);
+    strcpy(op->out1, name);
+    strcpy(op->out2, "");
     return op;
 }
 

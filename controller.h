@@ -45,12 +45,13 @@ typedef struct Output_ {
 } Output;
 
 int output_message (Output *op, char *str);
-Output *processCmd (struct sockaddr_in *cliaddr, char *command_str);
-Output *processUSER (struct sockaddr_in *cliaddr, char *name, char *pass);
-Output *processSIGN (struct sockaddr_in *cliaddr, char *name, char *pass);
-Output *processQUIT (struct sockaddr_in *cliaddr, char *name);
-Output *processREQU (struct sockaddr_in *cliaddr, char *name, char *pass);
-Output *processSEND (struct sockaddr_in *cliaddr, char *name, char *pass);
+Output *processCmd (char *command_str);
+Output *processUSER (char *name, char *pass);
+Output *processSIGN (char *name, char *pass);
+Output *processQUIT (char *name);
+
+Output *processREQU (char *name, char *pass);
+Output *processSEND (char *name, char *pass);
 struct Command_ *command (char *input_str);
 
 #endif

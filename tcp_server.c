@@ -8,16 +8,22 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <sys/wait.h> /*****  For waitpid.                   *****/
-#include <setjmp.h>   /*****  For sigsetjmp and siglongjmp.  *****/
+#include <sys/wait.h>
+#include <setjmp.h>
+#include <sys/ioctl.h>
+#include <sys/poll.h>
+#include <sys/time.h>
 
 #include "user.h"
 #include "controller.h"
+#include "listUserOnline.h"
 
 // #define USER_FILE "account.txt"
 #define BACKLOG 100 /* Number of allowed connections */
 #define BUFF_SIZE 2098
 #define DEFAULT_PORT 3000
+#define TRUE 1
+#define FALSE 0
 
 void validArguments(int argc, char *argv[], int *port)
 {
@@ -40,8 +46,8 @@ void validArguments(int argc, char *argv[], int *port)
 	}
 	else
 	{
-		printf("(ERROR) To few arguments!\n");
-		exit(EXIT_FAILURE);
+		*port = DEFAULT_PORT;
+		return;
 	}
 }
 
@@ -52,24 +58,24 @@ void sig_chld(int signo)
 	while ((pid = waitpid(-1, &stat, WNOHANG)) > 0)
 		printf("child %d terminated\n", pid);
 	return;
-	/* WNOHANG: waitpid does not block
-    while loop: waitpid repeatedly until there is no child
-    process change status, i.e until waitpid returns 0. */
 }
 
-int no_user = 0;
-int no_session = 0;
+extern node *head;
 
 int main(int argc, char *argv[])
-{	
-	int port = 0;
+{
+	int port = 0, rc, on = 1, nfds = 1, current_size = 0, i, j, desc_ready, end_server = FALSE, compress_array = FALSE;
 	pid_t pid;
-	int listen_sock, conn_sock; /* file descriptors */
+	int listen_sock, close_conn, new_sd = -1; /* file descriptors */
 	char recv_data[BUFF_SIZE];
 	int bytes_sent, bytes_received;
 	struct sockaddr_in server;  /* server's address information */
 	struct sockaddr_in *client; /* client's address information */
 	int sin_size;
+	struct pollfd fds[200];
+	int timeout = 1, len;
+	node *ptr;
+	char message[2098];
 
 	validArguments(argc, argv, &port);
 
@@ -78,6 +84,23 @@ int main(int argc, char *argv[])
 	{ /* calls socket() */
 		perror("\nError: ");
 		return 0;
+	}
+
+	rc = setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR,
+					(char *)&on, sizeof(on));
+	if (rc < 0)
+	{
+		perror("setsockopt() failed");
+		close(listen_sock);
+		exit(-1);
+	}
+
+	rc = ioctl(listen_sock, FIONBIO, (char *)&on);
+	if (rc < 0)
+	{
+		perror("ioctl() failed");
+		close(listen_sock);
+		exit(-1);
 	}
 
 	// Setup Address structure
@@ -100,6 +123,10 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
+	memset(fds, 0, sizeof(fds));
+	fds[0].fd = listen_sock;
+	fds[0].events = POLLIN;
+
 	printf("<[SERVER STARTED]>\n");
 
 	char output[BUFF_SIZE];
@@ -107,62 +134,246 @@ int main(int argc, char *argv[])
 
 	while (1)
 	{
-		//accept request
-		sin_size = sizeof(struct sockaddr_in);
-		client = (struct sockaddr_in *)malloc(sizeof(struct sockaddr_in));
-		if ((conn_sock = accept(listen_sock, (struct sockaddr *)client, &sin_size)) == -1)
-			perror("\nError: ");
-
-		if (strcmp(inet_ntoa(client->sin_addr), "0.0.0.0") != 0)
+		rc = poll(fds, nfds, timeout);
+		if (rc < 0)
 		{
-			if ((pid = fork()) == 0)
+			perror("  poll() failed");
+			break;
+		}
+
+		current_size = nfds;
+		for (i = 0; i < current_size; i++)
+		{
+			/*********************************************************/
+			/* Loop through to find the descriptors that returned    */
+			/* POLLIN and determine whether it's the listening       */
+			/* or the active connection.                             */
+			/*********************************************************/
+			if (fds[i].revents == 0)
+				continue;
+
+			/*********************************************************/
+			/* If revents is not POLLIN, it's an unexpected result,  */
+			/* log and end the server.                               */
+			/*********************************************************/
+			if (fds[i].revents != POLLIN)
 			{
+				printf("  Error! revents = %d\n", fds[i].revents);
+				end_server = TRUE;
+				break;
+			}
+			if (fds[i].fd == listen_sock)
+			{
+				/*******************************************************/
+				/* Listening descriptor is readable.                   */
+				/*******************************************************/
+				printf("  Listening socket is readable\n");
 
-				printf("You got a connection from %s\n", inet_ntoa(client->sin_addr)); /* prints client's IP */
-
-				printf("%s:\n", "Child created for dealing with client requests");
-
-				close(listen_sock); /* child closes listening socket */
-
-				send(conn_sock, "220 USER <username>|<password> to login or SIGN <username>|<password> to sign up", strlen("220 USER <username>|<password> to login or SIGN <username>|<password> to sign up") + 1, 0);
-
-				while (1)
+				/*******************************************************/
+				/* Accept all incoming connections that are            */
+				/* queued up on the listening socket before we         */
+				/* loop back and call poll again.                      */
+				/*******************************************************/
+				do
 				{
-					//receives message from client
-					bytes_received = recv(conn_sock, recv_data, BUFF_SIZE - 1, 0); //blocking
+					/*****************************************************/
+					/* Accept each incoming connection. If               */
+					/* accept fails with EWOULDBLOCK, then we            */
+					/* have accepted all of them. Any other              */
+					/* failure on accept will cause us to end the        */
+					/* server.                                           */
+					/*****************************************************/
+					new_sd = accept(listen_sock, NULL, NULL);
+					if (new_sd < 0)
+					{
+						if (errno != EWOULDBLOCK)
+						{
+							perror("  accept() failed");
+							end_server = TRUE;
+						}
+						break;
+					}
+
+					/*****************************************************/
+					/* Add the new incoming connection to the            */
+					/* pollfd structure                                  */
+					/*****************************************************/
+					printf("  New incoming connection - %d\n", new_sd);
+					fds[nfds].fd = new_sd;
+					fds[nfds].events = POLLIN;
+					nfds++;
+
+					/*****************************************************/
+					/* Loop back up and accept another incoming          */
+					/* connection                                        */
+					/*****************************************************/
+				} while (new_sd != -1);
+			}
+
+			/*********************************************************/
+			/* This is not the listening socket, therefore an        */
+			/* existing connection must be readable                  */
+			/*********************************************************/
+
+			else
+			{
+				printf("  Descriptor %d is readable\n", fds[i].fd);
+				close_conn = FALSE;
+				/*******************************************************/
+				/* Receive all incoming data on this socket            */
+				/* before we loop back and call poll again.            */
+				/*******************************************************/
+
+				do
+				{
+					/*****************************************************/
+					/* Receive data on this connection until the         */
+					/* recv fails with EWOULDBLOCK. If any other         */
+					/* failure occurs, we will close the                 */
+					/* connection.                                       */
+					/*****************************************************/
+					bytes_received = recv(fds[i].fd, recv_data, BUFF_SIZE - 1, 0); //blocking
 					if (bytes_received <= 0)
 					{
-						printf("\nConnection closed\n");
+						if (errno != EWOULDBLOCK)
+						{
+							perror("  recv() failed");
+							close_conn = TRUE;
+						}
 						break;
+					}
+					/*****************************************************/
+					/* Check to see if the connection has been           */
+					/* closed by the client                              */
+					/*****************************************************/
+					if (bytes_received == 0)
+					{
+						printf("  Connection closed\n");
+						close_conn = TRUE;
+						break;
+					}
+
+					/*****************************************************/
+					/* Data was received                                 */
+					/*****************************************************/
+					len = bytes_received;
+					printf("  %d bytes received\n", len);
+					recv_data[bytes_received] = '\0';
+					printf("\nReceive: |%s|\n", recv_data);
+					Output *op = processCmd(recv_data);
+					if (!strcmp(op->code, LOGIN_SUCCESS))
+					{
+						strcpy(message, op->code);
+						strcat(message, "|");
+						strcat(message, op->out1);
+						ptr = head;
+						while (ptr != NULL)
+						{
+							printf("send %s to %s at %d\n", message, ptr->key, ptr->data);
+							send(ptr->data, message, strlen(message), 0);
+							ptr = ptr->next;
+						} 
+						insertLast(op->out1, fds[i].fd);
+						displayForward();
 					}
 					else
 					{
-						recv_data[bytes_received] = '\0';
-						printf("\nReceive: |%s|\n", recv_data);
-
-						Output *op = processCmd(client, recv_data);
-						//TODO : thong bao cho cac user online khac user nay da online
-						bytes_output = output_message(op, output);
+						if (!strcmp(op->code, SIGNUP_SUCCESS))
+						{
+							strcpy(message, op->code);
+							strcat(message, "|");
+							strcat(message, op->out1);
+							ptr = head;
+							while (ptr != NULL)
+							{
+								printf("send %s to %s at %d\n", message, ptr->key, ptr->data);
+								send(ptr->data, message, strlen(message), 0);
+								ptr = ptr->next;
+							}
+							insertLast(op->out1, fds[i].fd);
+							displayForward();
+						}
+						else
+						{
+							if (!strcmp(op->code, EXIT))
+							{
+								deleteNodeWithValue(op->out1);
+								 displayForward();
+								strcpy(message, op->code);
+								strcat(message, "|");
+								strcat(message, op->out1);
+								ptr = head;
+								while (ptr != NULL)
+								{
+									printf("send %s to %s at %d\n", message, ptr->key, ptr->data);
+									send(ptr->data, message, strlen(message), 0);
+									ptr = ptr->next;
+								}
+							}
+						}
 					}
-
-					//echo to client
-					bytes_sent = send(conn_sock, output, bytes_output, 0); /* send to the client welcome message */
+					bytes_output = output_message(op, output);
+					/*****************************************************/
+					/* Echo the data back to the client                  */
+					/*****************************************************/
+					bytes_sent = send(fds[i].fd, output, bytes_output, 0); /* send to the client welcome message */
 					if (bytes_sent <= 0)
 					{
-						printf("\nConnection closed\n");
+						perror("  send() failed");
+						close_conn = TRUE;
 						break;
 					}
-				} //end conversation
-				
-				close(conn_sock); /* done with this client */
+					break;
+				} while (TRUE);
 
-				exit(0); /* child terminates */
+				/*******************************************************/
+				/* If the close_conn flag was turned on, we need       */
+				/* to clean up this active connection. This            */
+				/* clean up process includes removing the              */
+				/* descriptor.                                         */
+				/*******************************************************/
+				if (close_conn)
+				{
+					close(fds[i].fd);
+					fds[i].fd = -1;
+					compress_array = TRUE;
+				}
+
+			} /* End of existing connection is readable             */
+		}	 /* End of loop through pollable descriptors 
+		/***********************************************************/
+		/* If the compress_array flag was turned on, we need       */
+		/* to squeeze together the array and decrement the number  */
+		/* of file descriptors. We do not need to move back the    */
+		/* events and revents fields because the events will always*/
+		/* be POLLIN in this case, and revents is output.          */
+		/***********************************************************/
+		if (compress_array)
+		{
+			compress_array = FALSE;
+			for (i = 0; i < nfds; i++)
+			{
+				if (fds[i].fd == -1)
+				{
+					for (j = i; j < nfds; j++)
+					{
+						fds[j].fd = fds[j + 1].fd;
+					}
+					i--;
+					nfds--;
+				}
 			}
 		}
-		signal(SIGCHLD, sig_chld);
-		close(conn_sock); /* parent closes connected socket */
 	}
+	while (end_server == FALSE)
+		; /* End of serving running.    */
 
-	close(listen_sock);
-	return 0;
+	/*************************************************************/
+	/* Clean up all of the sockets that are open                 */
+	/*************************************************************/
+	for (i = 0; i < nfds; i++)
+	{
+		if (fds[i].fd >= 0)
+			close(fds[i].fd);
+	}
 }
