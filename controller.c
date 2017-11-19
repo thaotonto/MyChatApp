@@ -10,7 +10,6 @@
  */
 int output_message (Output *op, char *str) {
     bzero(str, 2098);
-
     if (op == NULL) {
         strcpy(str, "Error: Command not found!");
     } else {
@@ -34,12 +33,12 @@ Output *processCmd (struct sockaddr_in *cliaddr, char *command_str) {
         return processUSER(cliaddr, cmd->arg1, cmd->arg2);
     case SIGN:
         return processSIGN(cliaddr, cmd->arg1, cmd->arg2);
+    case QUIT:
+        return processQUIT(cliaddr, cmd->arg1);
     case REQU:
         return processREQU(cliaddr, cmd->arg1, cmd->arg2);
     case SEND:
         return processSEND(cliaddr, cmd->arg1, cmd->arg2);
-    case QUIT:
-        return processQUIT(cliaddr, cmd->arg1, cmd->arg2);
     default:
         return NULL;
     }
@@ -55,12 +54,16 @@ Output *processUSER (struct sockaddr_in *cliaddr, char *name, char *pass) {
     if(check_user(name, pass) == 0){
         change_user_state(name, 0);
         strcpy(op->code, LOGIN_SUCCESS);
-        strcpy(op->out1, "Wellcome ");
+        strcpy(op->out1, "");
         strcat(op->out1, name);
         arr = get_users_list();
         if (arr.state == 0) {
             for (i = 0; i <  arr.count; i++) {
-                strcat(op->out2, "|");
+                if (i == 0) {
+                    strcpy(op->out2, "|");
+                } else {
+                    strcat(op->out2, "|");
+                }
                 strcat(op->out2, arr.users[i].name);
                 strcat(op->out2, " ");
                 sprintf(buffer,"%d",arr.users[i].state);
@@ -81,13 +84,17 @@ Output *processSIGN (struct sockaddr_in *cliaddr, char *name, char *pass) {
     Output *op = (Output *) malloc(sizeof(Output));
     if(create_new_user(name, pass) == 0){
         change_user_state(name, 0);
-        strcpy(op->code, LOGIN_SUCCESS);
-        strcpy(op->out1, "Sign up success and login as ");
+        strcpy(op->code, SIGNUP_SUCCESS);
+        strcpy(op->out1, "");
         strcat(op->out1, name);
         arr = get_users_list();
         if (arr.state == 0) {
             for (i = 0; i <  arr.count; i++) {
-                strcat(op->out2, "|");
+                if (i == 0) {
+                    strcpy(op->out2, "|");
+                } else {
+                    strcat(op->out2, "|");
+                }
                 strcat(op->out2, arr.users[i].name);
                 strcat(op->out2, " ");
                 sprintf(buffer,"%d",arr.users[i].state);
@@ -129,17 +136,12 @@ Output *processSEND (struct sockaddr_in *cliaddr, char *name, char *pass) {
     return op;
 }
 
-Output *processQUIT (struct sockaddr_in *cliaddr, char *name, char *pass) {
+Output *processQUIT (struct sockaddr_in *cliaddr, char *name) {
     Output *op = (Output *) malloc(sizeof(Output));
-    if(create_new_user(name, pass) == 0){
-        strcpy(op->code, LOGIN_SUCCESS);
-        strcpy(op->out1, "Sign up success and login as ");
-        strcat(op->out1, name);
-        //TODO: change status user
-    } else{
-        strcpy(op->code, SIGNUP_FAIL);
-        strcpy(op->out1, "Requested action aborted");
-    }
+    change_user_state(name, 1);
+    strcpy(op->code, EXIT);
+    strcpy(op->out1, "");
+    strcat(op->out1, name);
     return op;
 }
 
@@ -181,14 +183,19 @@ struct Command_ *command (char *input_str) {
 
     if (!strcmp(code, "QUIT")) {
         cmd->code = QUIT;
+        strcpy(argv1,strtok_r(rest, "|", &rest));
+        strcpy(cmd->arg1, argv1);
+        return cmd;
     }
 
     if (!strcmp(code, "REQU")) {
         cmd->code = REQU;
+        //TODO:
     }
 
     if (!strcmp(code, "SEND")) {
         cmd->code = SEND;
+        //TODO:
     }
 
 }

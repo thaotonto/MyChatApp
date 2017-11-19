@@ -13,6 +13,8 @@
 #define LOGIN_FAIL "430"
 #define LOGIN_SUCCESS "230"
 #define SIGNUP_FAIL "451"
+#define SIGNUP_SUCCESS "232"
+#define EXIT "231"
 
 #define CMD_ARG_1_LEN 30
 #define CMD_ARG_2_LEN 30
@@ -39,16 +41,16 @@ struct Command_ {
 typedef struct Output_ {
     char code[CODE_LEN + 1];
     char out1[OUT_1_LEN + 1];
-    char out2[OUT_1_LEN + 1];
+    char out2[OUT_2_LEN + 1];
 } Output;
 
 int output_message (Output *op, char *str);
 Output *processCmd (struct sockaddr_in *cliaddr, char *command_str);
 Output *processUSER (struct sockaddr_in *cliaddr, char *name, char *pass);
 Output *processSIGN (struct sockaddr_in *cliaddr, char *name, char *pass);
+Output *processQUIT (struct sockaddr_in *cliaddr, char *name);
 Output *processREQU (struct sockaddr_in *cliaddr, char *name, char *pass);
 Output *processSEND (struct sockaddr_in *cliaddr, char *name, char *pass);
-Output *processQUIT (struct sockaddr_in *cliaddr, char *name, char *pass);
 struct Command_ *command (char *input_str);
 
 #endif
