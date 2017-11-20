@@ -35,7 +35,7 @@ int store_message   (int s_id, int r_id, char* content,
     return 0;
 }
 
-message_array get_history(int id_1, int id_2) {
+message_array get_history(char *name1, char *name2, int page) {
     MYSQL *conn = mysql_init(NULL);
     MYSQL_ROW row;
     MYSQL_FIELD *field;
@@ -45,8 +45,8 @@ message_array get_history(int id_1, int id_2) {
     char query[1000];
     int i, count = 0;
     sprintf(query,
-        "SELECT * FROM chat.messages WHERE (send_id = %d AND receive_id = %d)  OR (send_id = %d AND receive_id = %d)",
-        id_1, id_2, id_2, id_1);
+        "SELECT * FROM chat.messages WHERE (send_name = '%s' AND receive_name = '%s')  OR (send_name = '%s' AND receive_name = '%s') ORDER BY timestamp DESC LIMIT 10 OFFSET %d",
+        name1, name2, name2, name1, page * 10);
     arr.count = 0;
     arr.state = 0;
 

@@ -15,6 +15,8 @@
 #define SIGNUP_FAIL "451"
 #define SIGNUP_SUCCESS "232"
 #define EXIT "231"
+#define SENT_SUCCESS "201"
+#define HISTORY "350"
 
 #define CMD_ARG_1_LEN 30
 #define CMD_ARG_2_LEN 30

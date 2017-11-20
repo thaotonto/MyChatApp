@@ -111,10 +111,9 @@ Output *processSIGN (char *name, char *pass) {
 Output *processREQU (char *name, char *pass) {
     Output *op = (Output *) malloc(sizeof(Output));
     if(create_new_user(name, pass) == 0){
-        strcpy(op->code, LOGIN_SUCCESS);
+        strcpy(op->code, HISTORY);
         strcpy(op->out1, "Sign up success and login as ");
         strcat(op->out1, name);
-        //TODO: change status user
     } else{
         strcpy(op->code, SIGNUP_FAIL);
         strcpy(op->out1, "Requested action aborted");
@@ -192,12 +191,16 @@ struct Command_ *command (char *input_str) {
 
     if (!strcmp(code, "REQU")) {
         cmd->code = REQU;
-        //TODO:
+        strcpy(argv1,strtok_r(rest, "|", &rest));
+        strcpy(cmd->arg1, argv1);
+        return cmd;
     }
 
     if (!strcmp(code, "SEND")) {
         cmd->code = SEND;
-        //TODO:
+        strcpy(argv1,strtok_r(rest, "|", &rest));
+        strcpy(cmd->arg1, argv1);
+        return cmd;
     }
 
 }
