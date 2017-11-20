@@ -26,7 +26,7 @@ int output_message (Output *op, char *str) {
 
 Output *processCmd (char *command_str) {
     struct Command_ *cmd = command(command_str);
-    if (cmd == NULL) return;
+    if (cmd == NULL) return processNOTFOUND();
 
     switch (cmd->code) {
     case USER:
@@ -40,11 +40,17 @@ Output *processCmd (char *command_str) {
     case SEND:
         return processSEND(cmd->arg1, cmd->arg2);
     default:
-        return NULL;
+        return processNOTFOUND();
     }
 }
 
-
+Output *processNOTFOUND () {
+    Output *op = (Output *) malloc(sizeof(Output));
+    strcpy(op->code, NOT_FOUND);
+    strcpy(op->out1, "Command not found");
+    strcpy(op->out2, "");
+    return op;
+}
 
 Output *processUSER (char *name, char *pass) {
     user_array arr;
@@ -203,4 +209,5 @@ struct Command_ *command (char *input_str) {
         return cmd;
     }
 
+    return NULL;
 }

@@ -17,6 +17,7 @@
 #define EXIT "231"
 #define SENT_SUCCESS "201"
 #define HISTORY "350"
+#define NOT_FOUND "404"
 
 #define CMD_ARG_1_LEN 30
 #define CMD_ARG_2_LEN 30
@@ -51,6 +52,7 @@ Output *processCmd (char *command_str);
 Output *processUSER (char *name, char *pass);
 Output *processSIGN (char *name, char *pass);
 Output *processQUIT (char *name);
+Output *processNOTFOUND ();
 
 Output *processREQU (char *name, char *pass);
 Output *processSEND (char *name, char *pass);
