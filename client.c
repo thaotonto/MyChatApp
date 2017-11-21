@@ -59,7 +59,7 @@ void signio_handler(int signo)
             strcpy(sender, strtok_r(rest, "|", &rest));
             strcpy(sent_time, strtok_r(rest, "|", &rest));
             strcpy(content, strtok_r(rest, "|", &rest));
-            printf("Got message: '%s' at %s from %s", content, sent_time, sender);
+            printf("Got message: '%s' at %s from %s\n", content, sent_time, sender);
         }
         if(!strcmp(code, LOGIN_SUCCESS)){
             printf("LOGIN\n" );
@@ -101,9 +101,6 @@ void signio_handler(int signo)
             } else {
                 exit(0);
             }
-        }
-        if(!strcmp(code, SENT_SUCCESS)){
-            printf("%s\n", success_sent(rest));
         }
         if(!strcmp(code, NOT_FOUND)){
             printf("%s\n", not_found(rest));

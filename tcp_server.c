@@ -261,7 +261,6 @@ int main(int argc, char *argv[])
 					/*****************************************************/
 					/* Data was received                                 */
 					/*****************************************************/
-					printf("again\n");
 					len = bytes_received;
 					printf("  %d bytes received\n", len);
 					recv_data[bytes_received] = '\0';
@@ -316,6 +315,33 @@ int main(int argc, char *argv[])
 								{
 									printf("send |%s| to %s at %d\n", message, ptr->key, ptr->data);
 									send(ptr->data, message, strlen(message), 0);
+									ptr = ptr->next;
+								}
+							}
+
+							if(!strcmp(op->code, SENT_SUCCESS)) {
+								ptr = head;
+								while(ptr != NULL) {
+									if (ptr->data == fds[i].fd) {
+										strcpy(anouncer, ptr->key);
+										break;
+									}
+									ptr = ptr->next;
+								}
+								strcpy(message, "");
+								strcpy(message, "731");
+								strcat(message, "|");
+								strcat(message, anouncer);
+								strcat(message, "|");
+								strcat(message, op->out2);
+								ptr = head;
+								while (ptr != NULL)
+								{	
+									if (!strcmp(ptr->key, op->out1)) {
+										printf("send |%s| to %s at %d\n", message, ptr->key, ptr->data);
+										send(ptr->data, message, strlen(message), 0);
+										break;
+									}
 									ptr = ptr->next;
 								}
 							}

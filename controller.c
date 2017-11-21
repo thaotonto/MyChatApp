@@ -43,7 +43,7 @@ Output *processCmd (char *command_str) {
     case REQU:
         return processREQU(cmd->arg1, cmd->arg2);
     case SEND:
-        return processSEND(cmd->arg1, cmd->arg2);
+        return processSEND(cmd->arg2, cmd->arg1, cmd->arg3);
     default:
         return processNOTFOUND();
     }
@@ -129,22 +129,20 @@ Output *processSIGN (char *name, char *pass) {
 
 Output *processREQU (char *name, char *pass) {
     Output *op = (Output *) malloc(sizeof(Output));
-    
+    //TODO
     return op;
 }
 
-Output *processSEND (char *name, char *pass) {
+Output *processSEND (char *name, char *sent_time, char* content) {
     Output *op = (Output *) malloc(sizeof(Output));
-    if(create_new_user(name, pass) == 0){
-        strcpy(op->code, LOGIN_SUCCESS);
-        strcpy(op->out1, "Sign up success and login as ");
-        strcat(op->out1, name);
-        //TODO: change status user
-    } else{
-        strcpy(op->code, SIGNUP_FAIL);
-        strcpy(op->out1, "Requested action aborted");
-        strcpy(op->out2, "");
-    }
+    strcpy(op->code, SENT_SUCCESS);
+    strcpy(op->out1, name);
+    strcpy(op->out2, "|");
+    strcat(op->out2, sent_time);
+    strcat(op->out2, "|");
+    strcat(op->out2, content);
+    //TODO: save to database content
+    
     return op;
 }
 
@@ -210,8 +208,11 @@ struct Command_ *command (char *input_str) {
     if (!strcmp(code, "SEND")) {
         cmd->code = SEND;
         strcpy(argv1,strtok_r(rest, "|", &rest));
+        strcpy(argv2,strtok_r(rest, "|", &rest));
+        strcpy(argv3,strtok_r(rest, "|", &rest));
         strcpy(cmd->arg1, argv1);
-        //TODO
+        strcpy(cmd->arg2, argv2);
+        strcpy(cmd->arg3, argv3);
         return cmd;
     }
 

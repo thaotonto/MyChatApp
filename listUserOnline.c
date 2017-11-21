@@ -1,10 +1,8 @@
 #include "listUserOnline.h"
 
 node *head = NULL;
-
 node *last = NULL;
 
-node *current = NULL;
 //is list empty
 bool isEmpty() {
    return head == NULL;
@@ -40,20 +38,32 @@ void displayForward() {
 
 //insert link at the last location
 void insertLast(char* key, int data) {
-       
+    node *temp;
     node *link = ( node*) malloc(sizeof( node));
     strcpy(link->key,key);
     link->data = data;
     link->prev=NULL;
     link->next=NULL;
-   if(isEmpty()) {
-      head = last = link;
-   } else {
-        link->prev = last;
-        last->next = link ;
-		link->next= NULL;
-		last=link;
-   }
+    if(head==NULL)
+     {
+          head=link;
+          head->prev=NULL;
+          head->next=NULL;
+          last=head;
+     }
+    else
+    {
+        last=head;
+        while(last!=NULL)
+        {
+            temp=last;
+            last=last->next;
+        }
+        last=link;
+        temp->next=last;
+        last->prev=temp;
+        last->next=NULL;
+    }
 }
 
 void deleteNode(node* del) {
