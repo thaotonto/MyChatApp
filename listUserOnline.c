@@ -79,7 +79,7 @@ void deleteNode(node* del) {
     free(del);
 }
 
-void deleteNodeWithValue(char *key) {
+void deleteNodeWithKey(char *key) {
     if (head == NULL)
         return;
  
@@ -97,4 +97,27 @@ void deleteNodeWithValue(char *key) {
         return;
  
     deleteNode(current);
+}
+
+char* deleteNodeWithValue(int data) {
+    char* key;
+    if (head == NULL)
+        return "UNAUTHORIZED";
+ 
+    node* current = head;
+    int i;
+ 
+    for (int i = 1; current != NULL; i++) {
+        if (current->data != data) {
+            current = current->next;
+        } else {
+            strcpy(key, current->key);
+            break;
+        }
+    }
+    if (current == NULL)
+        return "UNAUTHORIZED";
+ 
+    deleteNode(current);
+    return key;
 }

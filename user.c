@@ -76,11 +76,13 @@ int check_user(char *name, char *pass) {
     }
 
     if(mysql_num_rows(result) == 0){
+        mysql_close(conn);
         return 2;
     }
 
     row = mysql_fetch_row(result);
     if(atoi(row[3]) == 1){
+        mysql_close(conn);
         return 3;
     }
 
@@ -203,27 +205,34 @@ User *get_user_by_id( int id ){
 int change_user_state(char *name, int cur_state){
     MYSQL *conn = mysql_init(NULL);
     char query[1000];
-    if(cur_state == 0){
-        sprintf(query, "UPDATE users SET state = 1 WHERE name = '%s'", name);
-    } else if(cur_state == 1 ){
-        sprintf(query, "UPDATE users SET state = 0 WHERE name = '%s'", name);
+    // if(cur_state == 0){
+    //     sprintf(query, "UPDATE users SET state = 1 WHERE name = '%s'", name);
+    // } else if(cur_state == 1 ){
+    //     sprintf(query, "UPDATE users SET state = 0 WHERE name = '%s'", name);
+    // }
+    strcpy(query, "UPDATE users SET state = ");
+    if(cur_state){
+        strcat(query, "0 WHERE name = '");
+        strcat(query, name);
+        strcat(query, "'");
+    } else {
+        strcat(query, "1 WHERE name = '");
+        strcat(query, name);
+        strcat(query, "'");
     }
-
 
     if (conn == NULL) {
        return 1;
      }
-
     if (mysql_real_connect(conn, host, db_user, password, db_name,
                                         port, unix_socket, flag) == NULL) {
         mysql_close(conn);
         return 1;
     }
-
     if (mysql_query(conn,query)) {
         mysql_close(conn);
         return 2;
     }
-
+    mysql_close(conn);
     return 0;
 }

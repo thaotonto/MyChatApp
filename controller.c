@@ -1,6 +1,11 @@
 #include "controller.h"
 #include <stdlib.h>
 #include <string.h>
+
+#include "listUserOnline.h"
+
+extern node *head;
+
 /**
  * [op2str  description]
  * @param  op       [description]
@@ -124,15 +129,7 @@ Output *processSIGN (char *name, char *pass) {
 
 Output *processREQU (char *name, char *pass) {
     Output *op = (Output *) malloc(sizeof(Output));
-    if(create_new_user(name, pass) == 0){
-        strcpy(op->code, HISTORY);
-        strcpy(op->out1, "Sign up success and login as ");
-        strcat(op->out1, name);
-    } else{
-        strcpy(op->code, SIGNUP_FAIL);
-        strcpy(op->out1, "Requested action aborted");
-        strcpy(op->out2, "");
-    }
+    
     return op;
 }
 
@@ -214,6 +211,7 @@ struct Command_ *command (char *input_str) {
         cmd->code = SEND;
         strcpy(argv1,strtok_r(rest, "|", &rest));
         strcpy(cmd->arg1, argv1);
+        //TODO
         return cmd;
     }
 

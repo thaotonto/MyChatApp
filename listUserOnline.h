@@ -20,6 +20,7 @@ int length();
 void displayForward();
 void insertLast(char* key, int data);
 void deleteNode(node* del);
-void deleteNodeWithValue(char *key);
+void deleteNodeWithKey(char *key);
+char* deleteNodeWithValue(int data);
 
 #endif
