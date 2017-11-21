@@ -16,6 +16,7 @@
 
 #include "user.h"
 #include "controller.h"
+#include "message.h"
 #include "listUserOnline.h"
 
 #define BACKLOG 100 /* Number of allowed connections */
@@ -54,7 +55,7 @@ extern node *head;
 
 int main(int argc, char *argv[])
 {
-	int port = 0, rc, on = 1, nfds = 1, current_size = 0, i, j, desc_ready, end_server = FALSE, compress_array = FALSE;
+	int port = 0, rc, on = 1, nfds = 1, current_size = 0, i, j, k, desc_ready, end_server = FALSE, compress_array = FALSE;
 	pid_t pid;
 	int listen_sock, close_conn, new_sd = -1; /* file descriptors */
 	char recv_data[BUFF_SIZE];
@@ -65,9 +66,9 @@ int main(int argc, char *argv[])
 	struct pollfd fds[200];
 	int timeout = 1, len;
 	node *ptr;
-	char message[2098];
-	char anouncer[2098];
-
+	char message[2098], anouncer[2098];
+	char *rest, content[250], sent_time[30];
+	message_array history_message;
 	validArguments(argc, argv, &port);
 
 	// Create a socket
@@ -274,7 +275,7 @@ int main(int argc, char *argv[])
 						strcat(message, op->out1);
 						ptr = head;
 						while (ptr != NULL)
-						{
+						{	
 							printf("send |%s| to %s at %d\n", message, ptr->key, ptr->data);
 							send(ptr->data, message, strlen(message), 0);
 							ptr = ptr->next;
@@ -328,6 +329,11 @@ int main(int argc, char *argv[])
 									}
 									ptr = ptr->next;
 								}
+								rest = (char*)malloc(sizeof(op->out2) +1);
+								strcpy(rest, op->out2);
+								strcpy(sent_time,strtok_r(rest, "|", &rest));
+								strcpy(content,strtok_r(rest, "|", &rest));
+								store_message(anouncer, op->out1, content, sent_time, 0);
 								strcpy(message, "");
 								strcpy(message, "731");
 								strcat(message, "|");
@@ -345,18 +351,47 @@ int main(int argc, char *argv[])
 									ptr = ptr->next;
 								}
 							}
+
+
 						}
 					}
-					bytes_output = output_message(op, output);
-					/*****************************************************/
-					/* Echo the data back to the client                  */
-					/*****************************************************/
-					bytes_sent = send(fds[i].fd, output, bytes_output, 0); /* send to the client welcome message */
-					if (bytes_sent <= 0)
-					{
-						perror("  send() failed");
-						close_conn = TRUE;
-						break;
+
+					if (!strcmp(op->code, HISTORY)) {
+						ptr = head;
+						while(ptr != NULL) {
+						if (ptr->data == fds[i].fd) {
+							strcpy(anouncer, ptr->key);
+							break;
+						}
+						ptr = ptr->next;
+						}
+						history_message = get_history(anouncer, op->out1, atoi(op->out2));
+						printf("co %d history\n", history_message.count);
+						strcpy(message, "");
+						strcpy(message, HISTORY);
+						strcat(message, "|");
+						strcat(message, op->out1);
+						for(k = 0; k < history_message.count; k++) {
+							strcat(message, "|");
+							strcat(message, history_message.messages[k].send_name);
+							strcat(message, "|");
+							strcat(message, history_message.messages[k].sent_time);
+							strcat(message, "|");
+							strcat(message, history_message.messages[k].content);				
+						}
+						send(fds[i].fd, message, strlen(message), 0);
+					} else {
+						bytes_output = output_message(op, output);
+						/*****************************************************/
+						/* Echo the data back to the client                  */
+						/*****************************************************/
+						bytes_sent = send(fds[i].fd, output, bytes_output, 0); /* send to the client welcome message */
+						if (bytes_sent <= 0)
+						{
+							perror("  send() failed");
+							close_conn = TRUE;
+							break;
+						}
 					}
 					break;
 				} while (TRUE);

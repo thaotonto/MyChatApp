@@ -55,7 +55,7 @@ Output *processSIGN (char *name, char *pass);
 Output *processQUIT (char *name);
 Output *processNOTFOUND ();
 
-Output *processREQU (char *name, char *pass);
+Output *processREQU (char *name, char *page);
 Output *processSEND (char *name, char *sent_time, char* content);
 struct Command_ *command (char *input_str);
 

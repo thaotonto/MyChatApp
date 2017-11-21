@@ -127,9 +127,11 @@ Output *processSIGN (char *name, char *pass) {
     return op;
 }
 
-Output *processREQU (char *name, char *pass) {
+Output *processREQU (char *name, char *page) {
     Output *op = (Output *) malloc(sizeof(Output));
-    //TODO
+    strcpy(op->code, HISTORY);
+    strcpy(op->out1, name);
+    strcpy(op->out2, page);
     return op;
 }
 
@@ -141,8 +143,6 @@ Output *processSEND (char *name, char *sent_time, char* content) {
     strcat(op->out2, sent_time);
     strcat(op->out2, "|");
     strcat(op->out2, content);
-    //TODO: save to database content
-    
     return op;
 }
 
@@ -201,7 +201,9 @@ struct Command_ *command (char *input_str) {
     if (!strcmp(code, "REQU")) {
         cmd->code = REQU;
         strcpy(argv1,strtok_r(rest, "|", &rest));
+        strcpy(argv2,strtok_r(rest, "|", &rest));
         strcpy(cmd->arg1, argv1);
+        strcpy(cmd->arg2, argv2);
         return cmd;
     }
 
