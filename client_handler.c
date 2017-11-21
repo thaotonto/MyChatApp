@@ -1,11 +1,11 @@
 #include "client_handler.h"
 
-char* not_found(char *rest){
+char *fail_signin(char *rest){
     return rest;
 }
 
-void history(char *rest){
-
+char* not_found(char *rest){
+    return rest;
 }
 
 char *success_sent(char *rest){
@@ -31,10 +31,6 @@ user_array success_login(char *rest){
     }
     result.count = count;
     return result;
-}
-
-char *fail_signin(char *rest){
-    return rest;
 }
 
 user_array success_signin(char *rest){
@@ -79,4 +75,13 @@ void show_users(user_array array){
 
 char *already_login(char *rest){
     return rest;
+}
+
+void show_history(chat_history history) {
+    printf("History with %s\n", history.name);
+    int i;
+    for(i = 0; i < history.count; i++){
+        printf("Sender: %s\nTime: %s\nContent: %s\n", history.messages[i].sender,
+            history.messages[i].sent_time, history.messages[i].content);
+    }
 }

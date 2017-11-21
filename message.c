@@ -8,14 +8,14 @@
  * 2: wrong agrument
  */
 int store_message   (char *send_name, char *receive_name, char* content,
-                                int timestamp, int state) {
+                                char* sent_time, int state) {
 
     MYSQL *conn = mysql_init(NULL);
     char query[1000];
 
     sprintf(query,
-        "INSERT INTO messages (send_name, receive_name, content, time, state) VALUES ('%s', '%s', '%s', %d, %d)",
-                            send_name, receive_name, content, timestamp, state);
+        "INSERT INTO messages (send_name, receive_name, content, time, state) VALUES ('%s', '%s', '%s', '%s', %d)",
+                            send_name, receive_name, content, sent_time, state);
 
     if (conn == NULL) {
        return 1;
@@ -45,7 +45,7 @@ message_array get_history(char *name1, char *name2, int page) {
     char query[1000];
     int i, count = 0;
     sprintf(query,
-        "SELECT * FROM chat.messages WHERE (send_name = '%s' AND receive_name = '%s')  OR (send_name = '%s' AND receive_name = '%s') ORDER BY timestamp DESC LIMIT 10 OFFSET %d",
+        "SELECT * FROM chat.messages WHERE (send_name = '%s' AND receive_name = '%s')  OR (send_name = '%s' AND receive_name = '%s') ORDER BY id DESC LIMIT 10 OFFSET %d",
         name1, name2, name2, name1, page * 10);
     arr.count = 0;
     arr.state = 0;
@@ -79,11 +79,12 @@ message_array get_history(char *name1, char *name2, int page) {
     arr.count = mysql_num_rows(result);
 
     while ((row = mysql_fetch_row(result))) {
-        messages[count].s_id = atoi(row[0]);
-        messages[count].r_id = atoi(row[1]);
-        strcpy(messages[count].content, row[2]);
-        messages[count].timestamp = atoi(row[3]);
-        messages[count].state = atoi(row[4]);
+        messages[count].id = atoi(row[0]);
+        strcpy(messages[count].send_name, row[1]);
+        strcpy(messages[count].receive_name, row[2]);
+        strcpy(messages[count].content, row[3]);
+        strcpy(messages[count].sent_time, row[4]);
+        messages[count].state = atoi(row[5]);
         count++;
     }
 
@@ -137,11 +138,12 @@ message_array get_offline_messages() {
     arr.count = mysql_num_rows(result);
 
     while ((row = mysql_fetch_row(result))) {
-        messages[count].s_id = atoi(row[0]);
-        messages[count].r_id = atoi(row[1]);
-        strcpy(messages[count].content, row[2]);
-        messages[count].timestamp = atoi(row[3]);
-        messages[count].state = atoi(row[4]);
+        messages[count].id = atoi(row[0]);
+        strcpy(messages[count].send_name, row[1]);
+        strcpy(messages[count].receive_name, row[2]);
+        strcpy(messages[count].content, row[3]);
+        strcpy(messages[count].sent_time, row[4]);
+        messages[count].state = atoi(row[5]);
         count++;
     }
 

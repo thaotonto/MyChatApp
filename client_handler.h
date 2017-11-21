@@ -14,6 +14,7 @@
 #define SENT_SUCCESS "201"
 #define HISTORY "350"
 #define NOT_FOUND "404"
+#define RECEIVE_MESSAGE "731"
 
 #define SEND "SEND"
 #define RECEIVE "RECV"
@@ -29,13 +30,18 @@ typedef struct {
 } user_array;
 
 typedef struct {
-    char name[30];
+    char sender[30];
     char content[250];
-    int timestamp;
+    char sent_time[30];
 } message;
 
+typedef struct {
+    char name[30];
+    int count;
+    message messages[100];
+} chat_history;
+
 char *not_found(char *rest);
-void history(char *rest);
 char *success_sent(char *rest);
 char *user_exit(char *rest);
 char *fail_login(char *rest);
@@ -47,4 +53,5 @@ char *already_login(char *rest);
 void add_user(user_array *array, char *name);
 void change_user_state(user_array *array, char *name, int cur_state);
 void show_users(user_array array);
+void show_history(chat_history history);
 #endif

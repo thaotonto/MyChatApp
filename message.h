@@ -8,10 +8,11 @@
 
 typedef struct
 {
-    int s_id;
-    int r_id;
+    int id;
+    char send_name[30];
+    char receive_name[30];
     char content[250];
-    int timestamp;
+    char sent_time[30];
     int state;
 } Message;
 
@@ -30,7 +31,7 @@ typedef struct
 } message_array;
 
 int store_message   (char *send_name, char *receive_name, char* content,
-                                                int timestamp, int state);
+                                                char* sent_time, int state);
 message_array get_history(char *name1, char *name2, int page);
 message_array get_offline_messages();
 int change_message_state(int message_id);
