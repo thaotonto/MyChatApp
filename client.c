@@ -13,7 +13,7 @@
 #define BUFF_SIZE 2098
 
 // #define CODE_LEN 4          // do dai lon nhat cua ma lenh
-#define RECV_LEN 3          // do dai code nhan tu server
+#define RECV_LEN 4          // do dai code nhan tu server
 
 int client_sock_fd;
 char name[30];
@@ -38,12 +38,14 @@ void signio_handler(int signo)
                 printf("Loged in as %s\n", name);
                 show_users(array);
             } else{ //----------> da dang nhap
-                printf("1\n");
                 change_user_state(&array, already_login(rest), 0);
                 show_users(array);
             }
         }
         if(!strcmp(code, LOGIN_FAIL)){
+            fail_login(rest);
+        }
+        if (!strcmp(code, LOGIN_BEFORE)) {
             fail_login(rest);
         }
         if(!strcmp(code, SIGNUP_SUCCESS)){

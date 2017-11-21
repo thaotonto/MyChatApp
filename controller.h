@@ -12,6 +12,7 @@
 
 #define LOGIN_FAIL "430"
 #define LOGIN_SUCCESS "230"
+#define LOGIN_BEFORE "440"
 #define SIGNUP_FAIL "451"
 #define SIGNUP_SUCCESS "232"
 #define EXIT "231"

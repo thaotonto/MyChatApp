@@ -57,7 +57,9 @@ Output *processUSER (char *name, char *pass) {
     int i;
     char buffer[2];
     Output *op = (Output *) malloc(sizeof(Output));
-    if(check_user(name, pass) == 0){
+    int state = check_user(name, pass);
+
+    if(state == 0){
         change_user_state(name, 0);
         strcpy(op->code, LOGIN_SUCCESS);
         strcpy(op->out1, name);
@@ -76,9 +78,15 @@ Output *processUSER (char *name, char *pass) {
             }
         }
     } else{
-        strcpy(op->code, LOGIN_FAIL);
-        strcpy(op->out1, "Invalid username or password");
-        strcpy(op->out2, "");
+        if (state == 3) {
+            strcpy(op->code, LOGIN_BEFORE);
+            strcpy(op->out1, "User has already logged in");
+            strcpy(op->out2, "");
+        } else {
+            strcpy(op->code, LOGIN_FAIL);
+            strcpy(op->out1, "Invalid username or password");
+            strcpy(op->out2, "");
+        }
     }
     return op;
 }

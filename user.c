@@ -80,7 +80,7 @@ int check_user(char *name, char *pass) {
     }
 
     row = mysql_fetch_row(result);
-    if(row[3] == 1){
+    if(atoi(row[3]) == 1){
         return 3;
     }
 
