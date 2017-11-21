@@ -204,11 +204,21 @@ User *get_user_by_id( int id ){
  */
 int change_user_state(char *name, int cur_state){
     MYSQL *conn = mysql_init(NULL);
-    char query[2048];
-    if(cur_state == 0){
-        sprintf(query, "UPDATE users SET state = 1 WHERE name = '%s'", name);
-    } else if(cur_state == 1 ){
-        sprintf(query, "UPDATE users SET state = 0 WHERE name = '%s'", name);
+    char query[1000];
+    // if(cur_state == 0){
+    //     sprintf(query, "UPDATE users SET state = 1 WHERE name = '%s'", name);
+    // } else if(cur_state == 1 ){
+    //     sprintf(query, "UPDATE users SET state = 0 WHERE name = '%s'", name);
+    // }
+    strcpy(query, "UPDATE users SET state = ");
+    if(cur_state){
+        strcat(query, "0 WHERE name = '");
+        strcat(query, name);
+        strcat(query, "'");
+    } else {
+        strcat(query, "1 WHERE name = '");
+        strcat(query, name);
+        strcat(query, "'");
     }
 
     if (conn == NULL) {

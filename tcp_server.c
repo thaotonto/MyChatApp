@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
 				/*******************************************************/
 				/* Listening descriptor is readable.                   */
 				/*******************************************************/
-				printf("  Listening socket is readable\n");
+				printf("Listening socket is readable\n");
 
 				/*******************************************************/
 				/* Accept all incoming connections that are            */
@@ -189,7 +189,7 @@ int main(int argc, char *argv[])
 					/* Add the new incoming connection to the            */
 					/* pollfd structure                                  */
 					/*****************************************************/
-					printf("  New incoming connection - %d\n", new_sd);
+					printf(" New incoming connection - %d\n", new_sd);
 					fds[nfds].fd = new_sd;
 					fds[nfds].events = POLLIN;
 					nfds++;
@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
 
 			else
 			{
-				printf("  Descriptor %d is readable\n", fds[i].fd);
+				printf("Descriptor %d is readable\n", fds[i].fd);
 				close_conn = FALSE;
 				/*******************************************************/
 				/* Receive all incoming data on this socket            */
@@ -226,6 +226,8 @@ int main(int argc, char *argv[])
 					bytes_received = recv(fds[i].fd, recv_data, BUFF_SIZE - 1, 0); //blocking
 					if (bytes_received <= 0)
 					{	
+						perror("  recv() failed");
+						close_conn = TRUE;
 						strcpy(anouncer, deleteNodeWithValue(fds[i].fd));
 						displayForward();
 						if (!strcmp(anouncer, "UNAUTHORIZED")){
@@ -243,8 +245,6 @@ int main(int argc, char *argv[])
 								ptr = ptr->next;
 							}
 						}
-						perror("  recv() failed");
-						close_conn = TRUE;
 						break;
 					}
 					/*****************************************************/
@@ -343,6 +343,7 @@ int main(int argc, char *argv[])
 				/*******************************************************/
 				if (close_conn)
 				{	
+					printf("close conn\n");
 					close(fds[i].fd);
 					fds[i].fd = -1;
 					compress_array = TRUE;
