@@ -39,7 +39,7 @@ void signio_handler(int signo)
         printf("Received from server: %s\n", buff);
         rest = buff;
         strcpy(code, strtok_r(rest, "|", &rest));
-        if(!strcpy(code, HISTORY)) {
+        if(!strcmp(code, HISTORY)) {
             strcpy(histories[chat_count].name, strtok_r(rest, "|", &rest));
             histories[chat_count].count = 0;
             while(strlen(rest) != 0){
@@ -62,6 +62,7 @@ void signio_handler(int signo)
             printf("Got message: '%s' at %s from %s", content, sent_time, sender);
         }
         if(!strcmp(code, LOGIN_SUCCESS)){
+            printf("LOGIN\n" );
             if(strlen(name) <= 0) { //------> chua dang nhap
                 strcpy(name, strtok_r(rest, "|", &rest));
                 array = success_login(rest);
@@ -72,7 +73,7 @@ void signio_handler(int signo)
                 show_users(array);
             }
         }
-        if(!strcmp(code, LOGIN_FAIL)){
+        if(!strcmp(code, LOGIN_FAIL)) {
             printf("%s\n", fail_login(rest));
         }
         if (!strcmp(code, LOGIN_BEFORE)) {
