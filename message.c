@@ -7,15 +7,15 @@
  * 1: connection fail
  * 2: wrong agrument
  */
-int store_message   (int s_id, int r_id, char* content,
+int store_message   (char *send_name, char *receive_name, char* content,
                                 int timestamp, int state) {
 
     MYSQL *conn = mysql_init(NULL);
     char query[1000];
 
     sprintf(query,
-        "INSERT INTO messages (send_id, receive_id, content, time, state) VALUES (%d, %d, '%s', %d, %d)",
-                            s_id, r_id, content, timestamp, state);
+        "INSERT INTO messages (send_name, receive_name, content, time, state) VALUES ('%s', '%s', '%s', %d, %d)",
+                            send_name, receive_name, content, timestamp, state);
 
     if (conn == NULL) {
        return 1;
@@ -154,12 +154,12 @@ message_array get_offline_messages() {
 }
 
 
-int change_message_state(int s_id, int r_id, int timestamp) {
+int change_message_state(int message_id) {
     MYSQL *conn = mysql_init(NULL);
     char query[1000];
 
     sprintf(query,
-        "UPDATE messages SET state = 1 WHERE send_id = %d AND receive_id = %d AND timestamp = %d", s_id, r_id, timestamp);
+        "UPDATE messages SET state = 1 WHERE id = %d", message_id);
 
     if (conn == NULL) {
        return 1;

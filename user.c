@@ -39,12 +39,14 @@ int create_new_user(char *name, char *pass) {
  * 0: ok to login
  * 1: connection fail
  * 2: login fail
+ * 3: already login
  */
 
 int check_user(char *name, char *pass) {
 
     MYSQL *conn = mysql_init(NULL);
     MYSQL_RES *result;
+    MYSQL_ROW row;
     char query[1000];
 
     sprintf(query,
@@ -75,6 +77,11 @@ int check_user(char *name, char *pass) {
 
     if(mysql_num_rows(result) == 0){
         return 2;
+    }
+
+    row = mysql_fetch_row(result);
+    if(row[3] == 1){
+        return 3;
     }
 
     mysql_free_result(result);

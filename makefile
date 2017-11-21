@@ -4,10 +4,10 @@ CC=gcc
 all: server client
 
 server: tcp_server.c user.c message.c controller.c listUserOnline.c
-	$(CC) $^ -o $@ $(CFLAGS) `mysql_config --cflags --libs`
+	$(CC) $^ -o $@ `mysql_config --cflags --libs`
 
-client: client.c
-	$(CC) -o $@ $^ $(CFLAGS)
+client: client.c client_handler.c
+	$(CC) -o $@ $^
 
 clean: *
 	rm -rf client server

@@ -29,10 +29,10 @@ typedef struct
     Message messages[1000];
 } message_array;
 
-int store_message   (int s_id, int r_id, char* content,
+int store_message   (char *send_name, char *receive_name, char* content,
                                                 int timestamp, int state);
 message_array get_history(char *name1, char *name2, int page);
 message_array get_offline_messages();
-int change_message_state(int s_id, int r_id, int timestamp);
+int change_message_state(int message_id);
 
 #endif
