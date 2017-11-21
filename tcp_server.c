@@ -18,7 +18,6 @@
 #include "controller.h"
 #include "listUserOnline.h"
 
-// #define USER_FILE "account.txt"
 #define BACKLOG 100 /* Number of allowed connections */
 #define BUFF_SIZE 2098
 #define DEFAULT_PORT 3000
@@ -67,6 +66,7 @@ int main(int argc, char *argv[])
 	int timeout = 1, len;
 	node *ptr;
 	char message[2098];
+	char anouncer[2098];
 
 	validArguments(argc, argv, &port);
 
@@ -225,19 +225,33 @@ int main(int argc, char *argv[])
 					/*****************************************************/
 					bytes_received = recv(fds[i].fd, recv_data, BUFF_SIZE - 1, 0); //blocking
 					if (bytes_received <= 0)
-					{
-						if (errno != EWOULDBLOCK)
-						{
-							perror("  recv() failed");
-							close_conn = TRUE;
+					{	
+						strcpy(anouncer, deleteNodeWithValue(fds[i].fd));
+						displayForward();
+						if (!strcmp(anouncer, "UNAUTHORIZED")){
+						} else {
+							change_user_state(anouncer, 1);
+							strcpy(message, "");
+							strcpy(message, "231");
+							strcat(message, "|");
+							strcat(message, anouncer);
+							ptr = head;
+							while (ptr != NULL)
+							{
+								printf("send |%s| to %s at %d\n", message, ptr->key, ptr->data);
+								send(ptr->data, message, strlen(message), 0);
+								ptr = ptr->next;
+							}
 						}
+						perror("  recv() failed");
+						close_conn = TRUE;
 						break;
 					}
 					/*****************************************************/
 					/* Check to see if the connection has been           */
 					/* closed by the client                              */
 					/*****************************************************/
-					if (bytes_received == 0)
+					if (bytes_received == 1)
 					{
 						printf("  Connection closed\n");
 						close_conn = TRUE;
@@ -247,20 +261,22 @@ int main(int argc, char *argv[])
 					/*****************************************************/
 					/* Data was received                                 */
 					/*****************************************************/
+					printf("again\n");
 					len = bytes_received;
 					printf("  %d bytes received\n", len);
 					recv_data[bytes_received] = '\0';
-					printf("\nReceive: |%s|\n", recv_data);
+					printf("Receive: |%s|\n\n", recv_data);
 					Output *op = processCmd(recv_data);
 					if (!strcmp(op->code, LOGIN_SUCCESS))
-					{
+					{	
+						strcpy(message, "");
 						strcpy(message, op->code);
 						strcat(message, "|");
 						strcat(message, op->out1);
 						ptr = head;
 						while (ptr != NULL)
 						{
-							printf("send %s to %s at %d\n", message, ptr->key, ptr->data);
+							printf("send |%s| to %s at %d\n", message, ptr->key, ptr->data);
 							send(ptr->data, message, strlen(message), 0);
 							ptr = ptr->next;
 						} 
@@ -270,14 +286,15 @@ int main(int argc, char *argv[])
 					else
 					{
 						if (!strcmp(op->code, SIGNUP_SUCCESS))
-						{
+						{	
+							strcpy(message, "");
 							strcpy(message, op->code);
 							strcat(message, "|");
 							strcat(message, op->out1);
 							ptr = head;
 							while (ptr != NULL)
 							{
-								printf("send %s to %s at %d\n", message, ptr->key, ptr->data);
+								printf("send |%s| to %s at %d\n", message, ptr->key, ptr->data);
 								send(ptr->data, message, strlen(message), 0);
 								ptr = ptr->next;
 							}
@@ -288,15 +305,16 @@ int main(int argc, char *argv[])
 						{
 							if (!strcmp(op->code, EXIT))
 							{
-								deleteNodeWithValue(op->out1);
-								 displayForward();
+								deleteNodeWithKey(op->out1);
+								displayForward();
+								strcpy(message, "");
 								strcpy(message, op->code);
 								strcat(message, "|");
 								strcat(message, op->out1);
 								ptr = head;
 								while (ptr != NULL)
 								{
-									printf("send %s to %s at %d\n", message, ptr->key, ptr->data);
+									printf("send |%s| to %s at %d\n", message, ptr->key, ptr->data);
 									send(ptr->data, message, strlen(message), 0);
 									ptr = ptr->next;
 								}
@@ -324,7 +342,7 @@ int main(int argc, char *argv[])
 				/* descriptor.                                         */
 				/*******************************************************/
 				if (close_conn)
-				{
+				{	
 					close(fds[i].fd);
 					fds[i].fd = -1;
 					compress_array = TRUE;
