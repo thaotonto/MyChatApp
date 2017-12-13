@@ -9,6 +9,7 @@
 
 
 #include "user.h"
+#include "message.h"
 
 #define LOGIN_FAIL "430"
 #define LOGIN_SUCCESS "230"

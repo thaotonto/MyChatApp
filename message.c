@@ -96,72 +96,78 @@ message_array get_history(char *name1, char *name2, int page) {
     return arr;
 }
 
-message_array get_offline_messages() {
+int get_offline_messages(char *sendName, char *receiveName) {
     MYSQL *conn = mysql_init(NULL);
     MYSQL_ROW row;
     MYSQL_FIELD *field;
     MYSQL_RES *result;
-    message_array arr;
-    Message messages[1000];
     char query[1000];
-    int i, count = 0;
-    sprintf(query, "Select * FROM messages WHERE state = 0");
-    arr.count = 0;
-    arr.state = 0;
+    int count = 0;
+    sprintf(query, "Select COUNT(*) FROM chat.messages WHERE (send_name = '%s' AND receive_name = '%s') AND state = 0", sendName, receiveName);
 
     if (conn == NULL) {
-        arr.state = 1;
-       return arr;
+       return -1;
     }
 
     if (mysql_real_connect(conn, host, db_user, password, db_name,
                                         port, unix_socket, flag) == NULL) {
         mysql_close(conn);
-        arr.state = 1;
-        return arr;
+        return -1;
     }
 
     if (mysql_query(conn, query)) {
         mysql_close(conn);
-        arr.state = 1;
-        return arr;
+        return -1;
     }
 
     result = mysql_store_result(conn);
 
     if(result == NULL) {
         mysql_close(conn);
-        arr.state = 2;
-        return arr;
+        return -2;
     }
 
-    arr.count = mysql_num_rows(result);
-
-    while ((row = mysql_fetch_row(result))) {
-        messages[count].id = atoi(row[0]);
-        strcpy(messages[count].send_name, row[1]);
-        strcpy(messages[count].receive_name, row[2]);
-        strcpy(messages[count].content, row[3]);
-        strcpy(messages[count].sent_time, row[4]);
-        messages[count].state = atoi(row[5]);
-        count++;
-    }
-
-    memcpy(&arr.messages, &messages, arr.count*sizeof(Message));
+    row = mysql_fetch_row(result);
+    count = atoi(row[0]);
 
     mysql_free_result(result);
 
     mysql_close(conn);
-    return arr;
+    return count;
 }
 
 
-int change_message_state(int message_id) {
+int change_message_state(char *sendName, char *receiveName) {
     MYSQL *conn = mysql_init(NULL);
     char query[1000];
 
     sprintf(query,
-        "UPDATE messages SET state = 1 WHERE id = %d", message_id);
+        "UPDATE chat.messages SET state = 1 WHERE (send_name = '%s' AND receive_name = '%s') AND state = 0", sendName, receiveName);
+
+    if (conn == NULL) {
+       return 1;
+    }
+
+    if (mysql_real_connect(conn, host, db_user, password, db_name,
+                                        port, unix_socket, flag) == NULL) {
+        mysql_close(conn);
+        return 1;
+    }
+
+    if (mysql_query(conn,query)) {
+        mysql_close(conn);
+        return 2;
+    }
+
+    return 0;
+}
+
+int change_message_state_on_sent(char *sendName, char *receiveName, char* sent_time) {
+    MYSQL *conn = mysql_init(NULL);
+    char query[1000];
+
+    sprintf(query,
+        "UPDATE chat.messages SET state = 1 WHERE send_name = '%s' AND receive_name = '%s' AND state = 0 and time = '%s'", sendName, receiveName, sent_time);
 
     if (conn == NULL) {
        return 1;

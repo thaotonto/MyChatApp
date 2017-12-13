@@ -33,7 +33,8 @@ typedef struct
 int store_message   (char *send_name, char *receive_name, char* content,
                                                 char* sent_time, int state);
 message_array get_history(char *name1, char *name2, int page);
-message_array get_offline_messages();
-int change_message_state(int message_id);
+int get_offline_messages(char *sendName, char *receiveName);
+int change_message_state(char *sendName, char *receiveName);
+int change_message_state_on_sent(char *sendName, char *receiveName, char* sent_time);
 
 #endif

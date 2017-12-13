@@ -241,7 +241,6 @@ int main(int argc, char *argv[])
 							ptr = head;
 							while (ptr != NULL)
 							{
-								printf("send |%s| to %s at %d\n", message, ptr->key, ptr->data);
 								send(ptr->data, message, strlen(message), 0);
 								ptr = ptr->next;
 							}
@@ -276,7 +275,6 @@ int main(int argc, char *argv[])
 						ptr = head;
 						while (ptr != NULL)
 						{	
-							printf("send |%s| to %s at %d\n", message, ptr->key, ptr->data);
 							send(ptr->data, message, strlen(message), 0);
 							ptr = ptr->next;
 						} 
@@ -294,7 +292,6 @@ int main(int argc, char *argv[])
 							ptr = head;
 							while (ptr != NULL)
 							{
-								printf("send |%s| to %s at %d\n", message, ptr->key, ptr->data);
 								send(ptr->data, message, strlen(message), 0);
 								ptr = ptr->next;
 							}
@@ -314,7 +311,6 @@ int main(int argc, char *argv[])
 								ptr = head;
 								while (ptr != NULL)
 								{
-									printf("send |%s| to %s at %d\n", message, ptr->key, ptr->data);
 									send(ptr->data, message, strlen(message), 0);
 									ptr = ptr->next;
 								}
@@ -344,7 +340,7 @@ int main(int argc, char *argv[])
 								while (ptr != NULL)
 								{	
 									if (!strcmp(ptr->key, op->out1)) {
-										printf("send |%s| to %s at %d\n", message, ptr->key, ptr->data);
+										change_message_state_on_sent(anouncer,op->out1,sent_time);
 										send(ptr->data, message, strlen(message), 0);
 										break;
 									}
@@ -366,7 +362,7 @@ int main(int argc, char *argv[])
 						ptr = ptr->next;
 						}
 						history_message = get_history(anouncer, op->out1, atoi(op->out2));
-						printf("co %d history\n", history_message.count);
+						change_message_state(op->out1, anouncer);
 						strcpy(message, "");
 						strcpy(message, HISTORY);
 						strcat(message, "|");

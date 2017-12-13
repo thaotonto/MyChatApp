@@ -80,6 +80,9 @@ Output *processUSER (char *name, char *pass) {
                 strcat(op->out2, " ");
                 sprintf(buffer,"%d",arr.users[i].state);
                 strcat(op->out2, buffer);
+                strcat(op->out2, " ");
+                sprintf(buffer,"%d", get_offline_messages(arr.users[i].name, name));
+                strcat(op->out2, buffer);
             }
         }
     } else{
@@ -116,6 +119,9 @@ Output *processSIGN (char *name, char *pass) {
                 strcat(op->out2, arr.users[i].name);
                 strcat(op->out2, " ");
                 sprintf(buffer,"%d",arr.users[i].state);
+                strcat(op->out2, buffer);
+                strcat(op->out2, " ");
+                sprintf(buffer,"%d", get_offline_messages(arr.users[i].name, name));
                 strcat(op->out2, buffer);
             }
         }
