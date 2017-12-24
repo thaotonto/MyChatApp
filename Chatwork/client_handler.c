@@ -26,7 +26,8 @@ user_array success_login(char *rest) {
     int count = 0;
     while ((token = strtok_r(rest, "|", &rest))) {
         strcpy(result.users[count].name, strtok_r(token, " ", &token));
-        result.users[count].state = atoi(token);
+        result.users[count].state = atoi(strtok_r(token, " ", &token));
+        result.users[count].mess_count = atoi(token);
         count++;
     }
     result.count = count;
@@ -39,7 +40,8 @@ user_array success_signin(char *rest) {
     int count = 0;
     while ((token = strtok_r(rest, "|", &rest))) {
         strcpy(result.users[count].name, strtok_r(token, " ", &token));
-        result.users[count].state = atoi(token);
+        result.users[count].state = atoi(strtok_r(token, " ", &token));
+        result.users[count].mess_count = atoi(token);
         count++;
     }
     result.count = count;
@@ -69,7 +71,7 @@ void add_user(user_array *array, char *name) {
 void show_users(user_array array) {
     int i;
     for (i = 0; i < array.count; i++) {
-        printf("%s\t%d\n", array.users[i].name, array.users[i].state);
+        printf("%s\t%d\t%d\n", array.users[i].name, array.users[i].state, array.users[i].mess_count);
     }
 }
 
