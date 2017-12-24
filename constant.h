@@ -1,6 +1,6 @@
 static const char *host = "localhost";
-static const char *db_user = "admin";
-static const char *password = "admin123";
+static const char *db_user = "root";
+static const char *password = "nhan1412";
 static const char *db_name = "chat";
 static const char *unix_socket = NULL;
 
