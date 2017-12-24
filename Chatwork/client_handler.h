@@ -22,6 +22,7 @@
 typedef struct {
     char name[30];
     int state;
+    int mess_count;
 } user;
 
 typedef struct {
