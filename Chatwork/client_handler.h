@@ -53,6 +53,8 @@ char *already_login(char *rest);
 
 char *get_user_name(char *resource);
 
+char *get_user_name_and_state(char *resource);
+
 void add_user(user_array *array, char *name);
 void change_user_state(user_array *array, char *name, int cur_state);
 void show_users(user_array array);

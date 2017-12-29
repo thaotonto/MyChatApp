@@ -95,4 +95,18 @@ char *get_user_name(char *resource) {
     return token;
 }
 
+char *get_user_name_and_state(char *resource) {
+    int i;
+    char *result;
+    result = malloc(40);
+    strcpy(result, resource);
+    for (i = strlen(result) - 1; i >= 0; i--) {
+        if(result[i] == ' '){
+            result[i] = '\0';
+            break;
+        }
+    }
+    return result;
+}
+
 

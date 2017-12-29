@@ -28,12 +28,13 @@ int client_sock_fd;
 char name[30], *receiver_name;
 user_array userArray;
 int chat_count = 0;
+char current_user[30], current_chat_user[30];
 chat_history histories[300];
 
 GtkBuilder *builder;
 GtkWidget *window_login, *window_main, *current_window;
 GtkWidget *btn_login, *btn_signup, *btn_send_msg, *edt_message;
-GtkWidget *lbl_notify, *txt_chat_log;
+GtkWidget *lbl_notify, *txt_chat_log, *txt_current_chat_user;
 GtkWidget *edt_username, *edt_password;
 GtkWidget *list, *vbox_user_list, *user_sw;
 GtkTreeSelection *selection;
@@ -41,14 +42,17 @@ GtkTreeSelection *selection;
 
 void initEvents();
 
+void set_current_user_label(char *user);
 
 void showUserList();
 
-void appendUser(gchar *name, gint state);
+void appendUser(gchar *name, gint state, gint mess_count);
 
 void initViews();
 
 void initNetwork(int argc, char **argv);
+
+void update_mess_count(char *sender);
 
 void btn_signup_clicked_handler();
 
@@ -143,7 +147,7 @@ void clear_user_list() {
 
 
 void append_message(chat_history history) {
-    for (int i = 0; i < history.count; i++) {
+    for (int i = history.count - 1; i >= 0; i--) {
         insert_message(history.messages[i].sent_time,
                        history.messages[i].sender,
                        history.messages[i].content);
@@ -193,8 +197,12 @@ void signio_handler(int signo) {
             strcpy(sent_time, strtok_r(rest, "|", &rest));
             strcpy(content, strtok_r(rest, "|", &rest));
             printf("Got message: '%s' at %s from %s\n", content, sent_time, sender);
-            insert_message(sent_time, sender, content);
-            gtk_entry_set_text(GTK_ENTRY(edt_message), "");
+            if (strcmp(sender, current_chat_user) == 0) {
+                insert_message(sent_time, sender, content);
+                gtk_entry_set_text(GTK_ENTRY(edt_message), "");
+            } else {
+                update_mess_count(sender);
+            }
         }
         if (!strcmp(code, LOGIN_SUCCESS)) {
             printf("LOGIN\n");
@@ -253,6 +261,17 @@ void signio_handler(int signo) {
     }
 }
 
+void update_mess_count(char *sender) {
+    int i;
+    for (i = 0; i < userArray.count; i++) {
+        if (strcmp(userArray.users->name, sender) == 0) {
+            userArray.users->mess_count++;
+            break;
+        }
+    }
+    showUserList();
+}
+
 void send_request(char *message) {
     gint bytes_sent, msg_len;
     msg_len = strlen(message) + 1;
@@ -266,6 +285,9 @@ void login_success() {
     gtk_widget_hide(window_login);
     gtk_widget_show_all(window_main);
     current_window = window_main;
+    char title[40];
+    sprintf(title, "Chat work - %s ", current_user);
+    gtk_window_set_title(GTK_WINDOW(window_main), title);
 }
 
 void notify(gchar *message) {
@@ -282,8 +304,11 @@ void notify(gchar *message) {
 
 void clear_chat_log() {
     GtkTextBuffer *buffer;
-    buffer = gtk_text_buffer_new(gtk_text_tag_table_new());
-    gtk_text_view_set_buffer(GTK_TEXT_VIEW(txt_chat_log), buffer);
+    buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(txt_chat_log));
+    GtkTextIter start, end;
+    gtk_text_buffer_get_start_iter(buffer, &start);
+    gtk_text_buffer_get_end_iter(buffer, &end);
+    gtk_text_buffer_delete(buffer, &start, &end);
 }
 
 void on_changed(GtkWidget *widget) {
@@ -303,10 +328,14 @@ void on_changed(GtkWidget *widget) {
     if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(selection),
                                         &model, &iter)) {
         gtk_tree_model_get(model, &iter, LIST_ITEM, &value, -1);
-        receiver_name = get_user_name(value);
+        char value_new[30];
+        strcpy(value_new, value);
+        set_current_user_label(get_user_name_and_state(value_new));
+        receiver_name = get_user_name(value_new);
         sprintf(history_req, "REQU|%s|0", receiver_name);
         clear_chat_log();
         send_request(history_req);
+        strcpy(current_chat_user, receiver_name);
     }
 }
 
@@ -315,21 +344,23 @@ void showUserList() {
     clear_user_list();
     int i = 0;
     for (i = 0; i < userArray.count; i++) {
-        appendUser(userArray.users[i].name, userArray.users[i].state);
+        if (strcmp(userArray.users[i].name, current_user) == 0)
+            continue;
+        appendUser(userArray.users[i].name, userArray.users[i].state, userArray.users[i].mess_count);
     }
     selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(list));
     g_signal_connect(selection, "changed", G_CALLBACK(on_changed), NULL);
 }
 
 
-void appendUser(gchar *name, gint state) {
+void appendUser(gchar *name, gint state, gint mess_count) {
     GtkListStore *store;
     GtkTreeIter iter;
 
     gchar userStr[50], stateStr[20];
     strcpy(stateStr, (state == 1) ? "Online" : "Offline");
 
-    sprintf(userStr, "%s (%s)", name, stateStr);
+    sprintf(userStr, "%s (%s) (%d)", name, stateStr, mess_count);
 
     store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
 
@@ -357,6 +388,17 @@ void init_list(GtkWidget *list) {
 
 }
 
+void set_current_user_label(char *user) {
+    GtkTextBuffer *buffer;
+    GtkTextIter start, end, iter;
+    buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(txt_current_chat_user));
+    gtk_text_buffer_get_start_iter(buffer, &start);
+    gtk_text_buffer_get_end_iter(buffer, &end);
+    gtk_text_buffer_delete(buffer, &start, &end);
+    gtk_text_buffer_get_iter_at_offset(buffer, &iter, -1);
+    gtk_text_buffer_insert(buffer, &start, user, strlen(user));
+}
+
 
 void initViews() {
     builder = gtk_builder_new();
@@ -374,6 +416,7 @@ void initViews() {
 
     edt_message = GTK_WIDGET(gtk_builder_get_object(builder, "edt_message"));
     txt_chat_log = GTK_WIDGET(gtk_builder_get_object(builder, "txt_chat_log"));
+    txt_current_chat_user = GTK_WIDGET(gtk_builder_get_object(builder, "txt_current_chat_user"));
     btn_login = GTK_WIDGET(gtk_builder_get_object(builder, "btn_signin"));
     btn_signup = GTK_WIDGET(gtk_builder_get_object(builder, "btn_signup"));
     btn_send_msg = GTK_WIDGET(gtk_builder_get_object(builder, "btn_send_msg"));
@@ -381,6 +424,8 @@ void initViews() {
     edt_username = GTK_WIDGET(gtk_builder_get_object(builder, "edt_username"));
     edt_password = GTK_WIDGET(gtk_builder_get_object(builder, "edt_password"));
     vbox_user_list = GTK_WIDGET(gtk_builder_get_object(builder, "box_user_list"));
+
+    set_current_user_label("Not currently chatting with any users");
 
     user_sw = gtk_scrolled_window_new(NULL, NULL);
     list = gtk_tree_view_new();
@@ -432,6 +477,7 @@ void btn_signin_clicked_handler() {
     char loginMessage[100];
     sprintf(loginMessage, "USER|%s|%s", username, password);
     send_request(loginMessage);
+    strcpy(current_user, username);
 }
 
 void btn_signup_clicked_handler() {
@@ -443,6 +489,7 @@ void btn_signup_clicked_handler() {
     char signupMessage[100];
     sprintf(signupMessage, "SIGN|%s|%s", username, password);
     send_request(signupMessage);
+    strcpy(current_user, username);
 }
 
 
