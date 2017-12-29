@@ -28,8 +28,9 @@ int client_sock_fd;
 char name[30], *receiver_name;
 user_array userArray;
 int chat_count = 0;
-char current_user[30], current_chat_user[30];
+char current_user[30];
 chat_history histories[300];
+int sending_history = 0;
 
 GtkBuilder *builder;
 GtkWidget *window_login, *window_main, *current_window;
@@ -171,6 +172,7 @@ void signio_handler(int signo) {
         rest = buff;
         strcpy(code, strtok_r(rest, "|", &rest));
         if (!strcmp(code, HISTORY)) {
+            sending_history = 0;
             strcpy(histories[chat_count].name, strtok_r(rest, "|", &rest));
             histories[chat_count].count = 0;
             while (strlen(rest) != 0) {
@@ -197,7 +199,7 @@ void signio_handler(int signo) {
             strcpy(sent_time, strtok_r(rest, "|", &rest));
             strcpy(content, strtok_r(rest, "|", &rest));
             printf("Got message: '%s' at %s from %s\n", content, sent_time, sender);
-            if (strcmp(sender, current_chat_user) == 0) {
+            if (strcmp(sender, receiver_name) == 0) {
                 insert_message(sent_time, sender, content);
                 gtk_entry_set_text(GTK_ENTRY(edt_message), "");
             } else {
@@ -264,8 +266,8 @@ void signio_handler(int signo) {
 void update_mess_count(char *sender) {
     int i;
     for (i = 0; i < userArray.count; i++) {
-        if (strcmp(userArray.users->name, sender) == 0) {
-            userArray.users->mess_count++;
+        if (strcmp(userArray.users[i].name, sender) == 0) {
+            userArray.users[i].mess_count++;
             break;
         }
     }
@@ -328,14 +330,15 @@ void on_changed(GtkWidget *widget) {
     if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(selection),
                                         &model, &iter)) {
         gtk_tree_model_get(model, &iter, LIST_ITEM, &value, -1);
-        char value_new[30];
-        strcpy(value_new, value);
-        set_current_user_label(get_user_name_and_state(value_new));
-        receiver_name = get_user_name(value_new);
-        sprintf(history_req, "REQU|%s|0", receiver_name);
-        clear_chat_log();
-        send_request(history_req);
-        strcpy(current_chat_user, receiver_name);
+        if (sending_history == 0) {
+            sending_history = 1;
+            set_current_user_label(get_user_name_and_state(value));
+            receiver_name = get_user_name(value);
+            sprintf(history_req, "REQU|%s|0", receiver_name);
+            printf("Send to server: %s\n", history_req);
+            clear_chat_log();
+            send_request(history_req);
+        }
     }
 }
 
@@ -463,6 +466,7 @@ char *get_time() {
 void btn_sendmsg_clicked_handler() {
     char request[200];
     sprintf(request, "SEND|%s|%s|%s", get_time(), receiver_name, gtk_entry_get_text(GTK_ENTRY(edt_message)));
+    printf("Send: %s\n", request);
     gtk_entry_set_text(GTK_ENTRY(edt_message), "");
     send_request(request);
 }
