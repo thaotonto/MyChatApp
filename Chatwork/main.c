@@ -31,11 +31,12 @@ int chat_count = 0;
 char current_user[30];
 chat_history histories[300];
 int sending_history = 0;
+int page_index = 0;
 
 GtkBuilder *builder;
 GtkWidget *window_login, *window_main, *current_window;
-GtkWidget *btn_login, *btn_signup, *btn_send_msg, *edt_message;
-GtkWidget *txt_chat_log, *lbl_current_chat_user;
+GtkWidget *btn_login, *btn_signup, *btn_send_msg, *edt_message, *btn_load_prev_mess, *btn_load_next_mess;
+GtkWidget *txt_chat_log, *lbl_current_chat_user, *lbl_notification;
 GtkWidget *edt_username, *edt_password;
 GtkWidget *list, *vbox_user_list, *user_sw;
 GtkTreeSelection *selection;
@@ -46,6 +47,10 @@ void initEvents();
 void set_current_user_label(char *user);
 
 void showUserList();
+
+void getHistory(char *username);
+
+void updateStatusBar(int mode, char *username);
 
 void appendUser(gchar *name, gint state, gint mess_count);
 
@@ -61,9 +66,15 @@ void btn_signin_clicked_handler();
 
 void btn_sendmsg_clicked_handler();
 
+void btn_load_next_mess_clicked_handler();
+
+void btn_load_prev_mess_clicked_handler();
+
 void login_success();
 
 void notify(gchar *message);
+
+void clear_chat_log();
 
 void signio_handler(int signo);
 
@@ -182,8 +193,20 @@ void signio_handler(int signo) {
                 strcpy(histories[chat_count].messages[i].content, strtok_r(rest, "|", &rest));
                 histories[chat_count].count++;
             }
+            printf("Check history: %d\n", histories[chat_count].count);
             show_history(histories[chat_count]);
-            append_message(histories[chat_count]);
+            if (histories[chat_count].count != 0) {
+                printf("Count khac 0\n");
+                clear_chat_log();
+                append_message(histories[chat_count]);
+                if (page_index > 0)
+                    gtk_widget_set_sensitive(btn_load_next_mess, TRUE);
+                else
+                    gtk_widget_set_sensitive(btn_load_next_mess, FALSE);
+                gtk_widget_set_sensitive(btn_load_prev_mess, TRUE);
+            } else {
+                gtk_widget_set_sensitive(btn_load_prev_mess, FALSE);
+            }
             chat_count++;
         }
         if (!strcmp(code, SENT_SUCCESS)) {
@@ -204,6 +227,7 @@ void signio_handler(int signo) {
                 gtk_entry_set_text(GTK_ENTRY(edt_message), "");
             } else {
                 update_mess_count(sender);
+                updateStatusBar(1, sender);
             }
         }
         if (!strcmp(code, LOGIN_SUCCESS)) {
@@ -350,11 +374,19 @@ void on_changed(GtkWidget *widget) {
             if (have_unread_message(receiver_name)) {
                 showUserList();
             }
+            gtk_widget_set_sensitive(btn_load_next_mess, FALSE);
+            page_index = 0;
             sprintf(history_req, "REQU|%s|0", receiver_name);
             clear_chat_log();
             send_request(history_req);
         }
     }
+}
+
+void getHistory(char *username) {
+    char history_req[20];
+    sprintf(history_req, "REQU|%s|%d", username, page_index);
+    send_request(history_req);
 }
 
 
@@ -368,6 +400,7 @@ void showUserList() {
     }
     selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(list));
     g_signal_connect(selection, "changed", G_CALLBACK(on_changed), NULL);
+    updateStatusBar(0, "");
 }
 
 
@@ -428,8 +461,11 @@ void initViews() {
     edt_message = GTK_WIDGET(gtk_builder_get_object(builder, "edt_message"));
     txt_chat_log = GTK_WIDGET(gtk_builder_get_object(builder, "txt_chat_log"));
     lbl_current_chat_user = GTK_WIDGET(gtk_builder_get_object(builder, "lbl_current_user_info"));
+    lbl_notification = GTK_WIDGET(gtk_builder_get_object(builder, "lbl_notification"));
     btn_login = GTK_WIDGET(gtk_builder_get_object(builder, "btn_signin"));
     btn_signup = GTK_WIDGET(gtk_builder_get_object(builder, "btn_signup"));
+    btn_load_prev_mess = GTK_WIDGET(gtk_builder_get_object(builder, "btn_load_prev_mess"));
+    btn_load_next_mess = GTK_WIDGET(gtk_builder_get_object(builder, "btn_load_next_mess"));
     btn_send_msg = GTK_WIDGET(gtk_builder_get_object(builder, "btn_send_msg"));
     edt_username = GTK_WIDGET(gtk_builder_get_object(builder, "edt_username"));
     edt_password = GTK_WIDGET(gtk_builder_get_object(builder, "edt_password"));
@@ -457,7 +493,21 @@ void initEvents() {
     g_signal_connect(G_OBJECT(btn_send_msg), "clicked", G_CALLBACK(btn_sendmsg_clicked_handler), NULL);
     g_signal_connect(G_OBJECT(btn_login), "clicked", G_CALLBACK(btn_signin_clicked_handler), NULL);
     g_signal_connect(G_OBJECT(btn_signup), "clicked", G_CALLBACK(btn_signup_clicked_handler), NULL);
+    g_signal_connect(G_OBJECT(btn_load_next_mess), "clicked", G_CALLBACK(btn_load_next_mess_clicked_handler), NULL);
+    g_signal_connect(G_OBJECT(btn_load_prev_mess), "clicked", G_CALLBACK(btn_load_prev_mess_clicked_handler), NULL);
     g_object_unref(builder);
+}
+
+void btn_load_next_mess_clicked_handler() {
+    if (page_index == 0)
+        return;
+    page_index--;
+    getHistory(receiver_name);
+}
+
+void btn_load_prev_mess_clicked_handler() {
+    page_index++;
+    getHistory(receiver_name);
 }
 
 char *get_time() {
@@ -533,3 +583,24 @@ void valid_arguments(int argc, char *argv[], char *serv_ip, int *serv_port) {
     }
 }
 
+void updateStatusBar(int mode, char *username) {
+    int i;
+    int totalUnread = 0;
+    char message[100];
+    switch (mode) {
+        case 0:
+            for (i = 0; i < userArray.count; i++) {
+                totalUnread += userArray.users[i].mess_count;
+            }
+            if (totalUnread == 0)
+                return;
+            sprintf(message, "You have %d unread messages!", totalUnread);
+            break;
+        case 1:
+            sprintf(message, "You've got new messages from %s", username);
+            break;
+        default:
+            break;
+    }
+    gtk_label_set_text(GTK_LABEL(lbl_notification), message);
+}
