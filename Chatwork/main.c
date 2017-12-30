@@ -223,7 +223,12 @@ void signio_handler(int signo) {
             strcpy(content, strtok_r(rest, "|", &rest));
             printf("Got message: '%s' at %s from %s\n", content, sent_time, sender);
             if (strcmp(sender, receiver_name) == 0) {
-                insert_message(sent_time, sender, content);
+                if (page_index == 0)
+                    insert_message(sent_time, sender, content);
+                else {
+                    page_index = 0;
+                    getHistory(sender);
+                }
                 gtk_entry_set_text(GTK_ENTRY(edt_message), "");
             } else {
                 update_mess_count(sender);
