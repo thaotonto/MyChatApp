@@ -32,6 +32,7 @@ char current_user[30];
 chat_history histories[300];
 int sending_history = 0;
 int page_index = 0;
+int selected = 0;
 
 GtkBuilder *builder;
 GtkWidget *window_login, *window_main, *current_window;
@@ -372,6 +373,7 @@ void on_changed(GtkWidget *widget) {
     if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(selection),
                                         &model, &iter)) {
         gtk_tree_model_get(model, &iter, LIST_ITEM, &value, -1);
+        selected = 1;
         if (sending_history == 0) {
             sending_history = 1;
             set_current_user_label(get_user_name_and_state(value));
@@ -535,7 +537,7 @@ void btn_sendmsg_clicked_handler() {
         notify("You have to type something before sending a message!");
         return;
     }
-    if(strcmp(receiver_name, "fdsafsadf") == 0){
+    if(!selected){
         notify("You need to select an user from user list first!");
         return;
     }
