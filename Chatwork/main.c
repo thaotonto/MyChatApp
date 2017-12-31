@@ -529,7 +529,17 @@ char *get_time() {
 
 void btn_sendmsg_clicked_handler() {
     char request[200];
-    sprintf(request, "SEND|%s|%s|%s", get_time(), receiver_name, gtk_entry_get_text(GTK_ENTRY(edt_message)));
+    const gchar *message;
+    message = gtk_entry_get_text(GTK_ENTRY(edt_message));
+    if (message == NULL || (strlen(message) == 0)) {
+        notify("You have to type something before sending a message!");
+        return;
+    }
+    if(strcmp(receiver_name, "fdsafsadf") == 0){
+        notify("You need to select an user from user list first!");
+        return;
+    }
+    sprintf(request, "SEND|%s|%s|%s", get_time(), receiver_name, message);
     printf("Send: %s\n", request);
     gtk_entry_set_text(GTK_ENTRY(edt_message), "");
     send_request(request);
@@ -541,7 +551,15 @@ void btn_signin_clicked_handler() {
     gint msg_len;
     msg_len = 101;
     username = gtk_entry_get_text(GTK_ENTRY(edt_username));
+    if (username == NULL || (strlen(username) == 0)) {
+        notify("Please enter username!");
+        return;
+    }
     password = gtk_entry_get_text(GTK_ENTRY(edt_password));
+    if (password == NULL || (strlen(password) == 0)) {
+        notify("Please enter password!");
+        return;
+    }
     char loginMessage[100];
     sprintf(loginMessage, "USER|%s|%s", username, password);
     send_request(loginMessage);
@@ -553,7 +571,15 @@ void btn_signup_clicked_handler() {
     gint msg_len;
     msg_len = 101;
     username = gtk_entry_get_text(GTK_ENTRY(edt_username));
+    if (username == NULL || (strlen(username) == 0)) {
+        notify("Please enter username!");
+        return;
+    }
     password = gtk_entry_get_text(GTK_ENTRY(edt_password));
+    if (password == NULL || (strlen(password) == 0)) {
+        notify("Please enter password!");
+        return;
+    }
     char signupMessage[100];
     sprintf(signupMessage, "SIGN|%s|%s", username, password);
     send_request(signupMessage);
